@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgoTrade V7: Paper Trading Monitor</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        #kill-banner {
+            display: none;
+            background-color: var(--danger);
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: normal;
+            font-size: 0.9rem;
+        }
+
+        .profit { color: var(--success); }
+        .loss { color: var(--danger); }
+        
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-dot.disconnected {
+            background-color: var(--danger);
+        }
+
+        /* Research Desk Styles */
+        .tip-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .tip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tip-symbol {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .badge.high { background-color: var(--success); }
+        .badge.medium { background-color: #f59e0b; }
+        .badge.low { background-color: var(--danger); }
+
+        .sentiment-bar-bg {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .sentiment-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="kill-banner">
+        🚨 RISK MANAGER ALERT: TRADING HALTED 🚨
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>AlgoTrade V7 Intraday Monitor</h1>
+        <div>
+            <span id="conn-status" class="status-dot"></span>
+            <span id="conn-text" style="color: var(--text-secondary);">Live</span>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Left Column: Engine A -->
+        <div>
+            <div class="grid">
+                <div class="panel">
+                    <h2>Account Equity</h2>
+                    <div class="stat-value" id="equity">₹0.00</div>
+                    <div class="stat-label">Peak: <span id="peak-equity">₹0.00</span></div>
+                </div>
+                <div class="panel">
+                    <h2>Current Drawdown</h2>
+                    <div class="stat-value" id="mdd">0.00%</div>
+                    <div class="stat-label">Max Limit: 10.00%</div>
+                </div>
+                <div class="panel">
+                    <h2>Rolling Metrics (10 Days)</h2>
+                    <div class="stat-value" id="rolling-pnl">₹0.00</div>
+                    <div class="stat-label">Total Trades: <span id="rolling-trades">0</span></div>
+                </div>
+            </div>
+
+            <div class="panel" style="margin-bottom: 20px;">
+                <h2>Open Positions (<span id="pos-count">0</span>)</h2>
+                <table id="positions-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Entry Time</th>
+                            <th>Entry Price</th>
+                            <th>Qty</th>
+                            <th>Stop Loss</th>
+                            <th>Target</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="panel">
+                <h2>Today's Trades (<span id="trade-count">0</span>)</h2>
+                <table id="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Entry Time</th>
+                            <th>Exit Time</th>
+                            <th>Entry Price</th>
+                            <th>Exit Price</th>
+                            <th>Qty</th>
+                            <th>PnL</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right Column: Engine B (Research Desk) -->
+        <div class="panel">
+            <h2>Research Desk (Engine B)</h2>
+            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">
+                News Sentiment Advisor. Updates daily at 16:00.
+            </div>
+            <div id="research-tips-container">
+                <div style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                    No research tips generated for today yet.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const formatCurrency = (val) => '₹' + parseFloat(val).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        
+        const evtSource = new EventSource("/api/stream");
+        
+        evtSource.onopen = function() {
+            document.getElementById('conn-status').className = 'status-dot';
+            document.getElementById('conn-text').innerText = 'Live';
+        };
+
+        evtSource.onerror = function() {
+            document.getElementById('conn-status').className = 'status-dot disconnected';
+            document.getElementById('conn-text').innerText = 'Reconnecting...';
+        };
+
+        evtSource.addEventListener("update", function(event) {
+            const state = JSON.parse(event.data);
+            
+            // Update Account
+            document.getElementById('equity').innerText = formatCurrency(state.account.equity);
+            document.getElementById('peak-equity').innerText = formatCurrency(state.account.peak_equity);
+            document.getElementById('mdd').innerText = (state.account.mdd * 100).toFixed(2) + '%';
+            
+            if(state.account.is_halted) {
+                document.getElementById('kill-banner').style.display = 'block';
+                document.title = "🚨 HALTED - AlgoTrade V7";
+            } else {
+                document.getElementById('kill-banner').style.display = 'none';
+                document.title = "AlgoTrade V7: Paper Trading Monitor";
+            }
+            
+            // Rolling
+            const rPnl = document.getElementById('rolling-pnl');
+            rPnl.innerText = formatCurrency(state.rolling_metrics.pnl);
+            rPnl.className = state.rolling_metrics.pnl >= 0 ? 'stat-value profit' : 'stat-value loss';
+            document.getElementById('rolling-trades').innerText = state.rolling_metrics.trades;
+            
+            // Positions
+            const posBody = document.querySelector('#positions-table tbody');
+            document.getElementById('pos-count').innerText = state.positions.length;
+            posBody.innerHTML = '';
+            state.positions.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${p.symbol}</strong></td>
+                    <td>${p.entry_time.split(' ')[1]}</td>
+                    <td>${formatCurrency(p.entry_price)}</td>
+                    <td>${p.qty}</td>
+                    <td class="loss">${formatCurrency(p.stop_loss)}</td>
+                    <td class="profit">${formatCurrency(p.target)}</td>
+                `;
+                posBody.appendChild(tr);
+            });
+            
+            // Trades
+            const trdBody = document.querySelector('#trades-table tbody');
+            document.getElementById('trade-count').innerText = state.trades.length;
+            trdBody.innerHTML = '';
+            state.trades.forEach(t => {
+                const tr = document.createElement('tr');
+                const pnlClass = t.pnl >= 0 ? 'profit' : 'loss';
+                tr.innerHTML = `
+                    <td><strong>${t.symbol}</strong></td>
+                    <td>${t.entry_time.split(' ')[1]}</td>
+                    <td>${t.exit_time.split(' ')[1]}</td>
+                    <td>${formatCurrency(t.entry_price)}</td>
+                    <td>${formatCurrency(t.exit_price)}</td>
+                    <td>${t.qty}</td>
+                    <td class="${pnlClass}"><strong>${formatCurrency(t.pnl)}</strong></td>
+                    <td>${t.reason}</td>
+                `;
+                trdBody.appendChild(tr);
+            });
+
+            // Engine B Tips
+            if (state.research_tips && state.research_tips.length > 0) {
+                const tipsContainer = document.getElementById('research-tips-container');
+                tipsContainer.innerHTML = '';
+                
+                state.research_tips.forEach(tip => {
+                    const confClass = tip.confidence.toLowerCase();
+                    // Score is mapped -0.7 to 1.3 roughly. Let's map it to 0-100% for the bar.
+                    const widthPct = Math.min(100, Math.max(0, ((tip.score + 0.7) / 2.0) * 100));
+                    const barColor = tip.score > 0.5 ? 'var(--success)' : (tip.score > 0.2 ? '#f59e0b' : 'var(--danger)');
+                    
+                    const card = document.createElement('div');
+                    card.className = 'tip-card';
+                    card.innerHTML = `
+                        <div class="tip-header">
+                            <span class="tip-symbol">${tip.symbol}</span>
+                            <span class="badge ${confClass}">${tip.confidence}</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">
+                            ${tip.rationale}
+                        </div>
+                        <div class="sentiment-bar-bg">
+                            <div class="sentiment-bar-fill" style="width: ${widthPct}%; background-color: ${barColor};"></div>
+                        </div>
+                    `;
+                    tipsContainer.appendChild(card);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

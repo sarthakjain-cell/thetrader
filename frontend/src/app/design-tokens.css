@@ -1,0 +1,52 @@
+/* Deep Space & Platinum Design System */
+:root {
+  /* Core backgrounds */
+  --bg-cosmos: #06080c;           /* Deepest background */
+  --bg-surface: #161b22;        /* Cards, panels (lightened for contrast) */
+  --bg-glass: rgba(22, 27, 34, 0.8); /* Translucent glass */
+  
+  /* Accent - Platinum */
+  --platinum: #b0b8c4;
+  --platinum-glow: rgba(176, 184, 196, 0.2);
+  
+  /* Signals */
+  --gold: #e5b73e;       /* Profit, AI high-conviction, buy markers */
+  --profit: #00c897;     /* P&L positive, up candles */
+  --loss: #e63946;       /* P&L negative, down candles */
+  --info: #4a9eff;       /* AI confidence, scanner pulse */
+  --warning: #f0a500;    /* Drift alerts, pending orders */
+  
+  /* Text */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #5a5a5a;
+  
+  /* Elevation Shadows */
+  --elevation-1: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(176,184,196,0.1);
+  --elevation-2: 0 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(176,184,196,0.15);
+  --elevation-3: 0 16px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(176,184,196,0.25);
+  
+  /* Buttons */
+  --btn-radius: 14px;
+  --btn-padding: 10px 24px;
+  
+  /* Typography Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+  --text-display: var(--text-3xl);
+  
+  /* Animation */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms var(--ease-out-expo);
+  --transition-smooth: 300ms var(--ease-out-expo);
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+  --ease-smooth: var(--ease-out-expo);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}

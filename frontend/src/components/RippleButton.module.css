@@ -1,0 +1,30 @@
+.rippleBtn {
+  position: relative;
+  overflow: hidden;
+  /* Retain any transition defined globally, or define a specific active state here */
+}
+
+.rippleBtn:active {
+  transform: scale(0.97);
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple-animation 400ms linear;
+  background-color: rgba(255, 255, 255, 0.3);
+  /* The size should be large enough to cover the button. We'll use a fixed large size and center it */
+  width: 100px;
+  height: 100px;
+  margin-top: -50px;
+  margin-left: -50px;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}

@@ -1,0 +1,13 @@
+yfinance
+pandas
+scikit-learn
+ta
+fastapi
+uvicorn
+pydantic-settings
+requests
+feedparser
+transformers
+torch
+python-multipart
+sse-starlette

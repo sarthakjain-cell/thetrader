@@ -1,0 +1,79 @@
+{
+  "macro_themes": [
+    {
+      "name": "Crude Spike",
+      "triggers": [
+        "crude oil surges", 
+        "oil prices jump", 
+        "middle east supply disruption", 
+        "brent crude crosses", 
+        "opec output cut",
+        "iran war"
+      ],
+      "positive_stocks": ["RELIANCE.NS"],
+      "negative_stocks": ["HINDUNILVR.NS"],
+      "confidence": 0.9
+    },
+    {
+      "name": "Rupee Depreciation",
+      "triggers": [
+        "rupee falls", 
+        "inr all-time low", 
+        "dollar strengthens against rupee",
+        "rupee hits record low"
+      ],
+      "positive_stocks": ["TCS.NS", "INFY.NS"],
+      "negative_stocks": ["HDFCBANK.NS", "ICICIBANK.NS", "BAJFINANCE.NS", "AXISBANK.NS", "KOTAKBANK.NS", "SBIN.NS"],
+      "confidence": 0.85
+    },
+    {
+      "name": "RBI Rate Hike",
+      "triggers": [
+        "rbi hikes rate",
+        "repo rate increased",
+        "das announces rate hike",
+        "inflation forces rbi"
+      ],
+      "positive_stocks": ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "AXISBANK.NS", "KOTAKBANK.NS"],
+      "negative_stocks": ["BAJFINANCE.NS"],
+      "confidence": 0.80
+    },
+    {
+      "name": "IT Sector Slowdown / US Tech Crash",
+      "triggers": [
+        "nasdaq crashes",
+        "us tech stocks tumble",
+        "tech hiring freezes",
+        "it spending cuts",
+        "accenture lowers guidance"
+      ],
+      "positive_stocks": [],
+      "negative_stocks": ["TCS.NS", "INFY.NS"],
+      "confidence": 0.90
+    },
+    {
+      "name": "FMCG Rural Revival",
+      "triggers": [
+        "rural demand recovers",
+        "good monsoon expected",
+        "rural consumption picks up",
+        "fmcg volume growth"
+      ],
+      "positive_stocks": ["ITC.NS", "HINDUNILVR.NS"],
+      "negative_stocks": [],
+      "confidence": 0.80
+    },
+    {
+      "name": "Infrastructure & Capex Push",
+      "triggers": [
+        "government capex boost",
+        "infrastructure spending plan",
+        "defense orders surge",
+        "record order book"
+      ],
+      "positive_stocks": ["LT.NS", "BHARTIARTL.NS"],
+      "negative_stocks": [],
+      "confidence": 0.85
+    }
+  ]
+}
