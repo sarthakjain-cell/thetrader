@@ -5,17 +5,20 @@
 .searchBar {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05); /* Soft transparent background */
-  border-radius: 8px; /* Upstox uses 8px */
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   padding: 8px 12px;
   gap: 8px;
   height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.02);
+  position: relative;
+  overflow: hidden;
 }
 
 .icon {
   font-size: 0.9rem;
   color: #8b949e;
+  z-index: 2;
 }
 
 .input {
@@ -26,8 +29,34 @@
   color: #ffffff;
   font-size: 0.85rem;
   font-weight: 500;
+  z-index: 2;
+  position: relative;
 }
 
-.input::placeholder {
+.placeholderWrapper {
+  position: absolute;
+  left: 34px;
+  right: 12px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.animatedText {
   color: #6e7681;
+  font-size: 0.85rem;
+  font-weight: 500;
+  position: absolute;
+  white-space: nowrap;
+  animation: rollInAndOut 3s forwards cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes rollInAndOut {
+  0% { transform: translateY(15px); opacity: 0; }
+  10% { transform: translateY(0); opacity: 1; }
+  85% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-15px); opacity: 0; }
 }

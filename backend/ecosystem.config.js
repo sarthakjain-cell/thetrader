@@ -35,6 +35,16 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '300M'
+    },
+    {
+      name: "ultimate-scraper",
+      script: "./venv/bin/python",
+      args: "ultimate_scraper.py",
+      interpreter: "none",
+      cron_restart: "*/15 * * * *",
+      autorestart: false,
+      watch: false,
+      max_memory_restart: '300M'
     }
   ]
 };

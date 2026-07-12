@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import styles from './CategoryScroll.module.css';
 
-export interface MarketSignal {
+interface MarketSignal {
   symbol: string;
   ai_prob: number;
-  sentiment_score: number;
-  fqs_score: number;
+  sentiment_score?: number;
+  fqs_score?: number;
   trend: 'Bullish' | 'Neutral' | 'Bearish';
+  last_price?: number;
+  volume_spike?: number;
 }
 
 interface CategoryScrollProps {
@@ -32,9 +34,8 @@ export const CategoryScroll: React.FC<CategoryScrollProps> = ({ title, signals }
             const isProfit = sig.ai_prob > 0.6;
             const priceColorClass = isProfit ? styles.positive : styles.negative;
             const arrow = isProfit ? '↑' : '↓';
-            const priceValue = (1000 + Math.random() * 500).toFixed(2);
-            const changeValue = (Math.random() * 10).toFixed(2);
-            const changePct = (Math.random() * 2).toFixed(2);
+            const priceValue = sig.last_price ? sig.last_price.toFixed(2) : "0.00";
+            const volValue = sig.volume_spike ? sig.volume_spike.toFixed(1) : "1.0";
             const logoLetter = sig.symbol.charAt(0);
 
             return (
@@ -46,10 +47,10 @@ export const CategoryScroll: React.FC<CategoryScrollProps> = ({ title, signals }
                   </div>
                   <div className={styles.priceInfo}>
                     <div className={`${styles.price} ${priceColorClass}`}>
-                      ₹{priceValue} <span className={styles.arrow}>{arrow}</span>
+                      ₹{priceValue}
                     </div>
                     <div className={styles.change}>
-                      {isProfit ? '+' : '-'}₹{changeValue} ({isProfit ? '+' : '-'}{changePct}%)
+                      Vol: {volValue}x <span className={styles.arrow}>{arrow}</span>
                     </div>
                   </div>
                 </div>

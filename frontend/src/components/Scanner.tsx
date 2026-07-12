@@ -4,8 +4,8 @@ import styles from './Scanner.module.css';
 interface MarketSignal {
   symbol: string;
   ai_prob: number;
-  sentiment_score: number;
-  fqs_score: number;
+  rsi: number;
+  macd: number;
   trend: 'Bullish' | 'Neutral' | 'Bearish';
 }
 
@@ -19,11 +19,9 @@ export const Scanner: React.FC<ScannerProps> = ({ signals }) => {
 
   // Mock end-of-day data if signals is empty (Market Closed)
   const displaySignals = signals.length > 0 ? signals : [
-    { symbol: 'HDFCBANK.NS', ai_prob: 0.82, sentiment_score: 75, fqs_score: 80, trend: 'Bullish' },
-    { symbol: 'INFY.NS', ai_prob: 0.71, sentiment_score: 60, fqs_score: 65, trend: 'Bullish' },
-    { symbol: 'ITC.NS', ai_prob: 0.45, sentiment_score: 40, fqs_score: 55, trend: 'Bearish' },
-    { symbol: 'TCS.NS', ai_prob: 0.68, sentiment_score: 85, fqs_score: 70, trend: 'Bullish' },
-    { symbol: 'RELIANCE.NS', ai_prob: 0.55, sentiment_score: 50, fqs_score: 60, trend: 'Neutral' },
+    { symbol: 'HDFCBANK.NS', ai_prob: 0.82, rsi: 65, macd: 1.2, trend: 'Bullish' },
+    { symbol: 'INFY.NS', ai_prob: 0.71, rsi: 55, macd: 0.8, trend: 'Bullish' },
+    { symbol: 'ITC.NS', ai_prob: 0.45, rsi: 35, macd: -0.5, trend: 'Bearish' },
   ];
 
   return (
@@ -54,8 +52,8 @@ export const Scanner: React.FC<ScannerProps> = ({ signals }) => {
               <div className={styles.leftCol}>
                 <div className={styles.symbol}>{sig.symbol.split('.')[0]}</div>
                 <div className={styles.techIndicators}>
-                  <span className={styles.indicator}>RSI: {Math.floor(Math.random() * 40 + 30)}</span>
-                  <span className={styles.indicator}>MACD: {isPos ? '+' : '-'}{(Math.random() * 2).toFixed(2)}</span>
+                  <span className={styles.indicator}>RSI: {Math.floor(sig.rsi)}</span>
+                  <span className={styles.indicator}>MACD: {sig.macd > 0 ? '+' : ''}{sig.macd.toFixed(2)}</span>
                 </div>
               </div>
               <div className={styles.rightCol}>

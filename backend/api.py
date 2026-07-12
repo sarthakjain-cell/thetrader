@@ -203,12 +203,15 @@ async def get_news(category: str = "All", limit: int = 20, offset: int = 0):
     # For now, related_tickers just has the raw ticker or MACRO_INDIA.
     # Future: we will build the full sector mapper in the Symbol Extractor job.
     if category.lower() != "all":
-        query = f"SELECT * FROM scraped_news WHERE related_tickers LIKE '%{category}%' ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"
+        query = f"SELECT * FROM scraped_news WHERE related_tickers LIKE '%{category}%' AND source NOT IN ('SEBI', 'RBI') ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"
     else:
-        query = f"SELECT * FROM scraped_news ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"
+        query = f"SELECT * FROM scraped_news WHERE source NOT IN ('SEBI', 'RBI') ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"
         
     try:
         df = pd.read_sql(query, conn)
+        # Fix NaN values that cause JSON serialization crash
+        import numpy as np
+        df = df.replace({np.nan: None})
         news = df.to_dict(orient="records")
     except Exception:
         news = []
@@ -222,12 +225,15 @@ async def get_news(category: str = "All", limit: int = 20, offset: int = 0):
 @app.get("/api/bars/{symbol}")
 async def get_bars(symbol: str):
     conn = get_db()
-    # Fetch today's bars
-    today = pd.Timestamp.now('Asia/Kolkata').strftime('%Y-%m-%d')
-    df = pd.read_sql(f"SELECT * FROM intraday_5m WHERE symbol = '{symbol}' AND datetime LIKE '{today}%' ORDER BY datetime ASC", conn)
+    # Fetch the most recent 150 bars for the symbol, regardless of date (fixes empty charts on weekends)
+    df = pd.read_sql(f"SELECT * FROM intraday_5m WHERE symbol = '{symbol}' ORDER BY datetime DESC LIMIT 150", conn)
     conn.close()
     if df.empty:
         return []
+        
+    # Reverse to chronological order for the chart
+    df = df.iloc[::-1].reset_index(drop=True)
+    
     # Convert datetime to unix timestamp for lightweight-charts
     df['time'] = pd.to_datetime(df['datetime']).astype('int64') // 10**9
     df['value'] = df['volume']

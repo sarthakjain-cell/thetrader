@@ -29,13 +29,16 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const marketSignals = state.daily_ai_forecasts?.map((f: any) => {
+  const marketSignals = state.market_signals?.map((sig: any) => {
     return {
-      symbol: f.symbol,
-      ai_prob: f.probability,
-      sentiment_score: Math.random() * 100,
-      fqs_score: 50 + Math.random() * 40,
-      trend: f.probability > 0.6 ? 'Bullish' : 'Neutral'
+      symbol: sig.symbol,
+      ai_prob: sig.ai_prob || 0.5,
+      rsi: sig.rsi || 50,
+      macd: sig.adx || 25, 
+      trend: sig.signal === 'BUY' ? 'Bullish' : sig.signal === 'SELL' ? 'Bearish' : 'Neutral',
+      sentiment: sig.sentiment || 0,
+      last_price: sig.last_price || 0,
+      volume_spike: sig.volume_spike || 1
     };
   }) || [];
 
@@ -50,8 +53,8 @@ export default function Home() {
         {/* Upstox-style Top Header */}
         <header className={styles.topSection}>
           <div className={styles.commandRow}>
-            <div className={styles.logoIcon}>⚡</div>
-            <div className={styles.logo}>⚡ AlgoTrade AI</div>
+            <div className={styles.logoIcon}></div>
+            <div className={styles.logo}>AlgoTrade AI</div>
             
             <div className={styles.searchContainer}>
               <CommandPalette />

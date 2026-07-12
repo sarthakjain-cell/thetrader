@@ -45,10 +45,49 @@
 }
 
 .headline {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #ffffff;
+  font-size: 13px;
   line-height: 1.4;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.expandedCard .headline {
+  -webkit-line-clamp: unset;
+}
+
+.detailsContainer {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: var(--bg-surface);
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  font-size: 12px;
+  color: var(--text-secondary);
+  animation: slideDown 0.2s ease-out forwards;
+}
+
+.detailsContext {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.detailsContext strong, .detailsImpact strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.detailsImpact {
+  color: var(--accent-primary);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .impactBox {

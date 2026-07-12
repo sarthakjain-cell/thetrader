@@ -11,6 +11,7 @@ import random
 import hashlib
 import xml.etree.ElementTree as ET
 import threading
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trading_system.db")
@@ -43,6 +44,31 @@ NIFTY_SYMBOLS = [
     "LT.NS", "BHARTIARTL.NS", "HINDUNILVR.NS"
 ]
 
+NIFTY_MAPPING = {
+    "RELIANCE.NS": ["Reliance", "RIL", "Reliance Industries"],
+    "TCS.NS": ["TCS", "Tata Consultancy"],
+    "HDFCBANK.NS": ["HDFC", "HDFC Bank", "HDFC Ltd"],
+    "INFY.NS": ["Infosys", "INFY"],
+    "ICICIBANK.NS": ["ICICI", "ICICI Bank"],
+    "KOTAKBANK.NS": ["Kotak", "Kotak Bank", "Kotak Mahindra"],
+    "AXISBANK.NS": ["Axis", "Axis Bank"],
+    "SBIN.NS": ["SBI", "State Bank", "SBIN"],
+    "BAJFINANCE.NS": ["Bajaj Finance"],
+    "ITC.NS": ["ITC"], 
+    "LT.NS": ["L&T", "Larsen", "Larsen & Toubro"],
+    "BHARTIARTL.NS": ["Bharti", "Airtel", "Bharti Airtel"],
+    "HINDUNILVR.NS": ["HUL", "Hindustan Unilever"]
+}
+
+SECTOR_MAPPING = {
+    "Pharma Sector": ["pharma", "drug", "fda", "sun pharma", "cipla", "dr reddy", "lupin"],
+    "Banking & Finance": ["bank", "rbi", "lender", "nbfc", "finance", "loan", "interest rate", "repo rate"],
+    "IT & Tech": ["tech", "software", "it sector", "nasdaq", "silicon", "ai"],
+    "Auto Sector": ["auto", "vehicle", "ev", "maruti", "tata motors", "mahindra"],
+    "Metals & Mining": ["metal", "steel", "mining", "tata steel", "hindalco", "jsw"],
+    "FMCG": ["fmcg", "consumer goods", "retail", "inflation"]
+}
+
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2.1 Safari/605.1.15",
@@ -59,7 +85,7 @@ class UltimateScraper:
         self.yf_limiter = RateLimiter(max_tokens=1, refill_time=2.0)  # 1 per 2s
 
     def init_db(self):
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=10.0)
         cursor = conn.cursor()
         # Adding content_hash to ensure strict deduplication across sources
         cursor.execute('''
@@ -131,7 +157,7 @@ class UltimateScraper:
         hash_input = f"{source}-{headline}-{related_tickers}".encode('utf-8')
         content_hash = hashlib.sha256(hash_input).hexdigest()
         
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=10.0)
         cursor = conn.cursor()
         now_str = datetime.now(ZoneInfo('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
         
@@ -151,6 +177,27 @@ class UltimateScraper:
         finally:
             conn.close()
         return False
+        
+    def smart_extract_tags(self, title, content):
+        """Extracts specific stocks or sectors from the headline/content using NLP keywords."""
+        text = f"{title} {content}".lower()
+        
+        # 1. Check for specific Nifty stocks
+        for sym, aliases in NIFTY_MAPPING.items():
+            for alias in aliases:
+                pattern = r'\b' + re.escape(alias.lower()) + r'\b'
+                if re.search(pattern, text):
+                    return sym # Return the exact stock ticker
+                    
+        # 2. Check for broader sectors
+        for sector, keywords in SECTOR_MAPPING.items():
+            for keyword in keywords:
+                pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+                if re.search(pattern, text):
+                    return sector # Return the sector string
+                    
+        # 3. Fallback to broad market
+        return "GENERAL_MARKET"
 
     def scrape_rbi_rss(self):
         """Scrapes the official RBI Press Release RSS Feed."""
@@ -283,6 +330,39 @@ class UltimateScraper:
         log.info(f"-> Logged {added} new corporate events from YFinance.")
         return added
 
+    def scrape_et_markets_rss(self):
+        """Scrapes the Economic Times Markets RSS feed for live general market news."""
+        log.info("[Scraper] Initiating ET Markets RSS Protocol...")
+        url = "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"
+        xml_data = self.safe_request(url)
+        
+        if not xml_data: return 0
+        
+        added = 0
+        try:
+            root = ET.fromstring(xml_data)
+            for item in root.findall('.//item'):
+                title = item.findtext('title')
+                description = item.findtext('description')
+                # Strip HTML tags from description if any
+                if description:
+                    description = BeautifulSoup(description, 'html.parser').get_text(strip=True)
+                
+                if title:
+                    # Extract intelligent tags based on text analysis
+                    full_desc = description or ''
+                    smart_tag = self.smart_extract_tags(title, full_desc)
+                    
+                    if self.insert_article('Economic Times', title, full_desc, smart_tag):
+                        added += 1
+                        
+                if added >= 50: # Cap at 50 per run
+                    break
+        except Exception as e:
+            log.error(f"[Scraper] ET Markets Parsing Error: {e}")
+            
+        return added
+
     def scrape_moneycontrol_earnings(self):
         """Phase 2: Crash-protected earnings calendar scraper."""
         log.info("[Scraper] Initiating Moneycontrol Earnings Calendar...")
@@ -344,13 +424,14 @@ class UltimateScraper:
         log.info("========== STARTING ULTIMATE SCRAPER (THREADPOOL) ==========")
         total_added = 0
         
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             futures = [
                 executor.submit(self.scrape_rbi_rss),
                 executor.submit(self.scrape_sebi_press_releases),
                 executor.submit(self.scrape_yfinance_news),
                 executor.submit(self.scrape_yfinance_actions),
-                executor.submit(self.scrape_moneycontrol_earnings)
+                executor.submit(self.scrape_moneycontrol_earnings),
+                executor.submit(self.scrape_et_markets_rss)
             ]
             
             for future in as_completed(futures):
