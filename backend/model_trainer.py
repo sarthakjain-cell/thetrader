@@ -61,6 +61,30 @@ def fetch_historical_data():
     # Fill missing sentiment with 0 (Neutral)
     df['macro_sentiment'] = df['macro_sentiment'].fillna(0.0)
     
+    # Fetch global macro features
+    conn = get_db()
+    try:
+        macro_query = "SELECT date as Datetime, vix_change, crude_change, usd_inr_change, gspc_change, dji_change FROM global_macro_features"
+        macro_df = pd.read_sql(macro_query, conn)
+        if not macro_df.empty:
+            macro_df['Datetime'] = pd.to_datetime(macro_df['Datetime'])
+            df = pd.merge(df, macro_df, on='Datetime', how='left')
+        else:
+            df['vix_change'] = np.nan
+            df['crude_change'] = np.nan
+            df['usd_inr_change'] = np.nan
+            df['gspc_change'] = np.nan
+            df['dji_change'] = np.nan
+    except Exception as e:
+        print(f"Failed to fetch macro features: {e}")
+        df['vix_change'] = np.nan
+        df['crude_change'] = np.nan
+        df['usd_inr_change'] = np.nan
+        df['gspc_change'] = np.nan
+        df['dji_change'] = np.nan
+    finally:
+        conn.close()
+        
     return df
 
 def generate_features_and_labels(df_sym):
@@ -99,9 +123,19 @@ def generate_features_and_labels(df_sym):
     df['Low_252'] = df['Low'].rolling(252).min()
     df['Proximity_52w'] = (df['Close'] - df['Low_252']) / (df['High_252'] - df['Low_252'] + 1e-9)
     
+    # Macro Trend Features (Computed before shift)
+    if 'vix_change' in df.columns:
+        df['vix_5d_avg'] = df['vix_change'].rolling(5).mean()
+        df['crude_10d_mom'] = df['crude_change'].rolling(10).mean()
+    else:
+        df['vix_5d_avg'] = np.nan
+        df['crude_10d_mom'] = np.nan
+    
     # Strict Lagging! ALL features must be shifted by 1 so day t only sees data up to t-1
     feature_cols = ['returns_1d', 'returns_5d', 'ATR_pct', 'RSI', 'MACD', 'BB_width', 'BB_pband', 
-                    'SMA_20_dist', 'SMA_50_dist', 'SMA_200_dist', 'Proximity_52w', 'macro_sentiment']
+                    'SMA_20_dist', 'SMA_50_dist', 'SMA_200_dist', 'Proximity_52w', 'macro_sentiment',
+                    'vix_change', 'crude_change', 'usd_inr_change', 'gspc_change', 'dji_change',
+                    'vix_5d_avg', 'crude_10d_mom']
     
     for col in feature_cols:
         if col in df.columns:
