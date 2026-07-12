@@ -12,7 +12,7 @@ module.exports = {
     {
       name: "engine-a-technical",
       script: "./venv/bin/python",
-      args: "paper_trader.py",
+      args: "live_trader.py",
       interpreter: "none",
       autorestart: true,
       watch: false,

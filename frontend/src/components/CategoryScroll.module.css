@@ -72,6 +72,14 @@
   color: #000;
 }
 
+.realLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  background-color: white; /* some logos need white bg */
+}
+
 .symbol {
   font-size: 0.95rem;
   font-weight: 600;

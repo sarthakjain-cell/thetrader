@@ -33,32 +33,11 @@
   width: 100%;
 }
 
-.logoIcon {
-  font-size: 1.4rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 50%;
-}
 
 .searchContainer {
   flex: 1;
 }
 
-.profileIcon {
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 50%;
-  color: #8b949e;
-}
 
 /* DESKTOP EXTRAS */
 .logo {
@@ -73,8 +52,6 @@
 @media (min-width: 1024px) {
   .logo { display: block; }
   .statusBox { display: flex; }
-  .logoIcon { display: none; }
-  .profileIcon { display: none; }
   .topSection {
     flex-direction: row;
     align-items: center;

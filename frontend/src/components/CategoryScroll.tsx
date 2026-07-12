@@ -16,6 +16,15 @@ interface CategoryScrollProps {
   signals: MarketSignal[];
 }
 
+const logoDomains: Record<string, string> = {
+  'RELIANCE': 'ril.com',
+  'TCS': 'tcs.com',
+  'HDFCBANK': 'hdfcbank.com',
+  'INFY': 'infosys.com',
+  'ICICIBANK': 'icicibank.com',
+  'SBIN': 'sbi.co.in'
+};
+
 export const CategoryScroll: React.FC<CategoryScrollProps> = ({ title, signals }) => {
   return (
     <div className={styles.container}>
@@ -36,14 +45,30 @@ export const CategoryScroll: React.FC<CategoryScrollProps> = ({ title, signals }
             const arrow = isProfit ? '↑' : '↓';
             const priceValue = sig.last_price ? sig.last_price.toFixed(2) : "0.00";
             const volValue = sig.volume_spike ? sig.volume_spike.toFixed(1) : "1.0";
-            const logoLetter = sig.symbol.charAt(0);
+            const cleanSymbol = sig.symbol.split('.')[0];
+            const logoLetter = cleanSymbol.charAt(0);
+            const domain = logoDomains[cleanSymbol];
+            const logoUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
 
             return (
               <div key={sig.symbol} className={styles.stockCard}>
                 <div className={styles.cardTop}>
                   <div className={styles.symbolInfo}>
-                    <div className={styles.logoPlaceholder}>{logoLetter}</div>
-                    <span className={styles.symbol}>{sig.symbol.split('.')[0]}</span>
+                    <div className={styles.logoPlaceholder}>
+                      {logoUrl ? (
+                        <img 
+                          src={logoUrl} 
+                          alt={cleanSymbol} 
+                          className={styles.realLogo}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        logoLetter
+                      )}
+                    </div>
+                    <span className={styles.symbol}>{cleanSymbol}</span>
                   </div>
                   <div className={styles.priceInfo}>
                     <div className={`${styles.price} ${priceColorClass}`}>

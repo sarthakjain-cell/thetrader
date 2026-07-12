@@ -53,14 +53,12 @@ export default function Home() {
         {/* Upstox-style Top Header */}
         <header className={styles.topSection}>
           <div className={styles.commandRow}>
-            <div className={styles.logoIcon}></div>
             <div className={styles.logo}>AlgoTrade AI</div>
             
             <div className={styles.searchContainer}>
               <CommandPalette />
             </div>
 
-            <div className={styles.profileIcon}>👤</div>
             <div className={styles.statusBox}>
               <span className={`${styles.statusDot} ${styles[state.status.toLowerCase()] || ''}`} />
               <span className={styles.statusText}>{state.status}</span>

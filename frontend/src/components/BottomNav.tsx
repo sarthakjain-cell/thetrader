@@ -12,18 +12,23 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
   return (
     <nav style={{
       position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
+      bottom: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: 'max-content',
+      maxWidth: '90%',
       height: '65px',
-      background: 'rgba(18, 21, 28, 0.95)',
-      backdropFilter: 'blur(10px)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+      background: 'rgba(18, 21, 28, 0.85)',
+      backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '32px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
       display: 'flex',
-      justifyContent: 'space-around',
+      justifyContent: 'center',
+      gap: '12px',
       alignItems: 'center',
       zIndex: 1000,
-      padding: '0 8px',
+      padding: '0 16px',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)'
     }}>
       <NavItem 
@@ -72,7 +77,7 @@ const NavItem: React.FC<{ icon: React.ReactNode, label: string, isActive: boolea
         gap: '4px',
         cursor: 'pointer',
         color: isActive ? '#5b45ff' : '#8b949e',
-        flex: 1,
+        width: '56px',
         position: 'relative',
         height: '100%',
         paddingTop: '8px'
@@ -100,12 +105,12 @@ const NavItem: React.FC<{ icon: React.ReactNode, label: string, isActive: boolea
           layoutId="activeTabIndicator"
           style={{
             position: 'absolute',
-            bottom: 0,
-            width: '30px',
-            height: '3px',
+            bottom: '-4px',
+            width: '4px',
+            height: '4px',
             background: '#5b45ff',
-            borderRadius: '3px 3px 0 0',
-            boxShadow: '0 -2px 10px rgba(91, 69, 255, 0.5)'
+            borderRadius: '50%',
+            boxShadow: '0 0 10px rgba(91, 69, 255, 0.8)'
           }}
         />
       )}
