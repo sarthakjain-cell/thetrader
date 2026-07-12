@@ -29,7 +29,8 @@ def fetch_dashboard_state(last_ah_id=0):
     now = pd.Timestamp.now('Asia/Kolkata')
     current_time = now.time()
     from datetime import time as dtime
-    if current_time >= dtime(9, 15) and current_time <= dtime(15, 30):
+    is_weekday = now.weekday() < 5
+    if current_time >= dtime(9, 15) and current_time <= dtime(15, 30) and is_weekday:
         market_status = "OPEN"
     else:
         market_status = "CLOSED"
