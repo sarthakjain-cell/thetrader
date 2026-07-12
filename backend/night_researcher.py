@@ -33,6 +33,16 @@ def init_trend_db():
             PRIMARY KEY (symbol, date)
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS global_macro_features (
+            date TEXT PRIMARY KEY,
+            vix_change REAL,
+            crude_change REAL,
+            usd_inr_change REAL,
+            gspc_change REAL,
+            dji_change REAL
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -69,6 +79,56 @@ def fetch_latest_daily_data():
             
     conn.commit()
     conn.close()
+
+def fetch_global_macro_data():
+    """Fetches global macro tickers and stores daily % changes for ML features."""
+    log.info("[Night Researcher] Fetching Global Macro Tickers (Crude, VIX, USD/INR, US Markets)...")
+    tickers = {
+        'vix': '^INDIAVIX',
+        'crude': 'CL=F',
+        'usd_inr': 'USDINR=X',
+        'gspc': '^GSPC',
+        'dji': '^DJI'
+    }
+    today_str = datetime.now(ZoneInfo('Asia/Kolkata')).strftime("%Y-%m-%d")
+    changes = {}
+    
+    for name, symbol in tickers.items():
+        try:
+            # Fetch 5 days to guarantee we get the last fully closed daily session
+            # This avoids picking up intraday/pre-market noise when running at 16:30 IST
+            df = yf.Ticker(symbol).history(period="5d")
+            if len(df) >= 2:
+                close_current = df.iloc[-1]['Close']
+                close_prev = df.iloc[-2]['Close']
+                pct_change = (close_current - close_prev) / close_prev * 100.0
+                changes[name + '_change'] = pct_change
+                log.info(f"Global Macro: {symbol} change = {pct_change:.2f}%")
+            else:
+                changes[name + '_change'] = 0.0
+        except Exception as e:
+            log.error(f"Error fetching {symbol}: {e}")
+            changes[name + '_change'] = 0.0
+            
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT OR REPLACE INTO global_macro_features 
+        (date, vix_change, crude_change, usd_inr_change, gspc_change, dji_change)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (
+        today_str, 
+        changes.get('vix_change', 0), 
+        changes.get('crude_change', 0), 
+        changes.get('usd_inr_change', 0), 
+        changes.get('gspc_change', 0), 
+        changes.get('dji_change', 0)
+    ))
+    conn.commit()
+    conn.close()
+    
+    # Broadcast to the Night Terminal UI
+    log_research("MACRO", "GLOBAL_CUES", f"S&P500 {changes.get('gspc_change',0):.2f}%, Crude {changes.get('crude_change',0):.2f}%, VIX {changes.get('vix_change',0):.2f}%", "High")
 
 def is_past_deadline():
     now = datetime.now(ZoneInfo('Asia/Kolkata'))
@@ -255,6 +315,7 @@ def run_research():
     
     # 1. Update data
     fetch_latest_daily_data()
+    fetch_global_macro_data()
     
     # 2. Iterate slowly through symbols
     conn = get_db()
