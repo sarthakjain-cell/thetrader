@@ -53,10 +53,13 @@ async def daemon_loop():
             log.info("[Daemon] Market is OPEN. Tactical Analyst mode engaged. Protecting CPU for Engine A.")
             await asyncio.sleep(600) # Sleep for 10 minutes
             
-        # 2. Post-Market (15:31 - 23:59) - Data Harvester
+        # 2. Post-Market (15:31 - 23:59) - Ultimate Macro Scraper
         elif (now.hour > 15 or (now.hour == 15 and now.minute > 30)) and not ran_harvester_today:
-            log.info("[Daemon] Market is CLOSED. Acting as Data Harvester. Scraping macro news...")
-            await run_script("data_harvester.py")
+            log.info("[Daemon] Market is CLOSED. Acting as Data Harvester. Scraping macro news (SEBI/RBI/Finance)...")
+            await run_script("ultimate_scraper.py")
+            # Also trigger the night researcher to calculate multi-timeframe trends
+            log.info("[Daemon] Triggering Night Researcher for Technical Trend updates...")
+            await run_script("night_researcher.py")
             ran_harvester_today = True
             
         # 3. Deep Night (00:00 - 04:00) - Pro Macro-Economist

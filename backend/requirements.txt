@@ -9,5 +9,7 @@ requests
 feedparser
 transformers
 torch
+beautifulsoup4
+requests
 python-multipart
 sse-starlette
