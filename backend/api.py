@@ -163,7 +163,7 @@ async def get_equity_history():
 
 @app.get("/api/poll")
 async def poll_state():
-    state, _ = fetch_dashboard_state(last_ah_id=0)
+    state, _ = await asyncio.to_thread(fetch_dashboard_state, 0)
     return state
 
 @app.get("/api/stream")
@@ -172,9 +172,9 @@ async def stream_state():
         last_ah_id = 0
         while True:
             # If client disconnects, asyncio.CancelledError is raised
-            if await asyncio.sleep(2) or True: # Sleep for 2 seconds
-                state, last_ah_id = fetch_dashboard_state(last_ah_id=last_ah_id)
-                yield {
+            await asyncio.sleep(2) # Sleep for 2 seconds
+            state, last_ah_id = await asyncio.to_thread(fetch_dashboard_state, last_ah_id)
+            yield {
                     "event": "update",
                     "data": json.dumps(state)
                 }
