@@ -6,9 +6,9 @@ import time
 import os
 import sys
 import json
+import lightgbm as lgb
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import TimeSeriesSplit
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trading_system.db")
@@ -90,6 +90,7 @@ def fetch_historical_data():
 def generate_features_and_labels(df_sym):
     """
     Computes strict point-in-time features via .shift(1) and proxy ORB labels.
+    Designed to be used with df.groupby('Symbol').apply()
     """
     df = df_sym.copy()
     
@@ -97,7 +98,7 @@ def generate_features_and_labels(df_sym):
     df = df.sort_values('Datetime').reset_index(drop=True)
     
     if len(df) < 50:
-        return pd.DataFrame(), []
+        return pd.DataFrame()
     
     # 1. Technical Features
     df['returns_1d'] = df['Close'].pct_change(1)
@@ -167,7 +168,14 @@ def generate_features_and_labels(df_sym):
     # Drop NaNs created by shifting and rolling
     df = df.dropna(subset=feature_cols).copy()
     
-    return df, feature_cols
+    return df
+
+GLOBAL_FEATURE_COLS = [
+    'returns_1d', 'returns_5d', 'ATR_pct', 'RSI', 'MACD', 'BB_width', 'BB_pband', 
+    'SMA_20_dist', 'SMA_50_dist', 'SMA_200_dist', 'Proximity_52w', 'macro_sentiment',
+    'vix_change', 'crude_change', 'usd_inr_change', 'gspc_change', 'dji_change',
+    'vix_5d_avg', 'crude_10d_mom'
+]
 
 def update_model_config(key, value):
     conn = get_db()
@@ -197,115 +205,121 @@ def main():
         # Uncomment this to enforce strict skipping. Commented for initial run to force training.
         # sys.exit(0)
         
-    all_data = []
-    global_features = []
+    # Vectorized Feature Generation
+    print("Generating features using vectorized operations...")
+    df_full = df_raw.groupby('Symbol', group_keys=False).apply(generate_features_and_labels)
     
-    for sym in NIFTY_SYMBOLS:
-        df_sym = df_raw[df_raw['Symbol'] == sym]
-        if df_sym.empty: continue
-        
-        df_feat, f_cols = generate_features_and_labels(df_sym)
-        if not df_feat.empty:
-            all_data.append(df_feat)
-            global_features = f_cols
-            
-    if not all_data:
+    if df_full.empty:
         print("Failed to generate features. Exiting.")
         sys.exit(1)
         
-    df_full = pd.concat(all_data, ignore_index=True)
     df_full = df_full.sort_values('Datetime').reset_index(drop=True)
-    
-    print(f"Total dataset size: {len(df_full)} rows. Features: {len(global_features)}")
+    print(f"Total dataset size: {len(df_full)} rows. Features: {len(GLOBAL_FEATURE_COLS)}")
     
     # Split features and target
-    X = df_full[global_features]
+    X = df_full[GLOBAL_FEATURE_COLS]
     y = df_full['Label']
     
-    # Walk-Forward Validation & Threshold Calibration
-    tscv = TimeSeriesSplit(n_splits=5)
+    # Class Imbalance Handling
+    n_neg = len(y[y == 0])
+    n_pos = len(y[y == 1])
+    spw = n_neg / n_pos if n_pos > 0 else 1.0
+    print(f"Class imbalance scale_pos_weight: {spw:.2f}")
     
-    best_threshold = 0.55
-    max_pf = 0.0
+    model_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model_latest.txt')
     
-    print("Running Walk-Forward Cross Validation to calibrate Dynamic Threshold...")
-    
-    # Simple grid search for threshold during validation
-    thresholds = [0.51, 0.53, 0.55, 0.57, 0.60]
-    pf_results = {th: [] for th in thresholds}
-    
-    for train_idx, val_idx in tscv.split(X):
-        X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
-        X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
+    if os.path.exists(model_file):
+        print("Existing model found. Performing incremental update (warm start)...")
+        # For incremental nightly updates, we don't need a full walk-forward CV threshold calibration,
+        # but we should fetch the last known best threshold.
+        # However, to be safe, we can just retrain lightly. 
+        # The user requested: `new_model = lgb.train(params, train_set, num_boost_round=50, init_model=old_model)`
         
-        # Nested split for Early Stopping (chronological last 20% of train set)
-        split_point = int(len(X_train) * 0.8)
-        X_inner_train, y_inner_train = X_train.iloc[:split_point], y_train.iloc[:split_point]
-        X_inner_val, y_inner_val = X_train.iloc[split_point:], y_train.iloc[split_point:]
+        # Load old model
+        old_model = lgb.Booster(model_file=model_file)
         
-        model = HistGradientBoostingClassifier(
-            learning_rate=0.05,
-            max_iter=500,
-            early_stopping=True,
-            validation_fraction=None, # We manually pass internal val
-            random_state=42
-        )
+        # Create LightGBM dataset for the entire dataset (or just recent data, but passing all is fine if small)
+        # Actually, for true incremental on just today, we would filter df_full for today's date.
+        # Since this script runs nightly, `df_full` contains the full 4 years.
+        # Let's filter for just the last 5 days to incrementally train, or train on full with small rounds.
+        # Training on full with `init_model` just adds more trees based on residual errors of the full set.
+        # It's extremely fast regardless.
+        lgb_train = lgb.Dataset(X, label=y)
         
-        # Train with early stopping on chronological inner validation
-        # HistGradientBoosting doesn't have an eval_set argument like LightGBM,
-        # but it can use validation_fraction. Since we want a chronological split,
-        # we'll use a hack: fit on the full inner set, it's fast enough. Or use
-        # a pipeline. Scikit-learn doesn't easily support passing a fixed eval set 
-        # to HistGB, it only supports validation_fraction (which is random).
-        # We will just disable early stopping for simplicity and rely on a low max_iter (200),
-        # which is standard for robust models on small datasets.
+        params = {
+            'objective': 'binary',
+            'learning_rate': 0.05,
+            'scale_pos_weight': spw,
+            'verbose': -1
+        }
         
-        model = HistGradientBoostingClassifier(
-            learning_rate=0.05,
-            max_iter=200,
-            random_state=42
-        )
-        model.fit(X_train, y_train)
+        final_model = lgb.train(params, lgb_train, num_boost_round=50, init_model=old_model)
+        final_model.save_model(model_file)
         
-        # Predict on outer validation
-        probs = model.predict_proba(X_val)[:, 1]
+        # Retrieve previous best threshold
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM model_config WHERE key='ai_conviction_threshold'")
+        row = cursor.fetchone()
+        best_threshold = float(row[0]) if row else 0.55
+        max_pf = 0.0 # Will be tracked in drift detection
+        conn.close()
         
-        # Evaluate Profit Factor for different thresholds
-        for th in thresholds:
-            trades = probs > th
-            if trades.sum() == 0:
-                pf_results[th].append(1.0)
-                continue
+    else:
+        print("No existing model found. Running full Walk-Forward CV to initialize and calibrate...")
+        # Walk-Forward Validation & Threshold Calibration
+        tscv = TimeSeriesSplit(n_splits=5)
+        best_threshold = 0.55
+        max_pf = 0.0
+        
+        thresholds = [0.51, 0.53, 0.55, 0.57, 0.60]
+        pf_results = {th: [] for th in thresholds}
+        
+        for train_idx, val_idx in tscv.split(X):
+            X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+            X_val, y_val = X.iloc[val_idx], y.iloc[val_idx]
+            
+            model = lgb.LGBMClassifier(
+                learning_rate=0.05,
+                n_estimators=200,
+                scale_pos_weight=spw,
+                random_state=42,
+                verbose=-1
+            )
+            model.fit(X_train, y_train)
+            probs = model.predict_proba(X_val)[:, 1]
+            
+            for th in thresholds:
+                trades = probs > th
+                if trades.sum() == 0:
+                    pf_results[th].append(1.0)
+                    continue
+                    
+                wins = y_val[trades].sum()
+                losses = trades.sum() - wins
                 
-            wins = y_val[trades].sum()
-            losses = trades.sum() - wins
-            
-            # Assuming average win = 2R, loss = 1R (Based on our ORB proxy target=2, stop=1)
-            gross_profit = wins * 2.0
-            gross_loss = losses * 1.0
-            
-            pf = gross_profit / gross_loss if gross_loss > 0 else 0
-            pf_results[th].append(pf)
-            
-    # Compute mean PF across folds for each threshold
-    mean_pfs = {th: np.mean(pfs) for th, pfs in pf_results.items()}
-    best_threshold = max(mean_pfs, key=mean_pfs.get)
-    max_pf = mean_pfs[best_threshold]
-    
-    print(f"Optimal Threshold Calibrated: {best_threshold} (Mean PF: {max_pf:.2f})")
-    
-    # Save optimized threshold
-    update_model_config('ai_conviction_threshold', best_threshold)
-    update_model_config('ai_hypothetical_pf', max_pf)
-    
-    # Final Retrain on ALL data
-    print("Retraining final production model on all historical data...")
-    final_model = HistGradientBoostingClassifier(
-        learning_rate=0.05,
-        max_iter=200, # Fixed iter for full train to prevent overfitting without early stopping
-        random_state=42
-    )
-    final_model.fit(X, y)
+                gross_profit = wins * 2.0
+                gross_loss = losses * 1.0
+                pf = gross_profit / gross_loss if gross_loss > 0 else 0
+                pf_results[th].append(pf)
+                
+        mean_pfs = {th: np.mean(pfs) for th, pfs in pf_results.items()}
+        best_threshold = max(mean_pfs, key=mean_pfs.get)
+        max_pf = mean_pfs[best_threshold]
+        
+        print(f"Optimal Threshold Calibrated: {best_threshold} (Mean PF: {max_pf:.2f})")
+        update_model_config('ai_conviction_threshold', best_threshold)
+        update_model_config('ai_hypothetical_pf', max_pf)
+        
+        print("Training final production model on all historical data...")
+        final_model = lgb.train({
+            'objective': 'binary',
+            'learning_rate': 0.05,
+            'scale_pos_weight': spw,
+            'verbose': -1
+        }, lgb.Dataset(X, label=y), num_boost_round=200)
+        
+        final_model.save_model(model_file)
     
     # Pre-calculate Tomorrow's Forecasts
     # We take the most recent row for each symbol
@@ -322,13 +336,15 @@ def main():
         if df_sym.empty: continue
         
         last_row = df_sym.iloc[-1:]
-        X_last = last_row[global_features]
+        X_last = last_row[GLOBAL_FEATURE_COLS]
         
-        prob = final_model.predict_proba(X_last)[0][1]
+        # lgb.Booster predict returns raw probabilities when objective='binary'
+        prob = final_model.predict(X_last)[0]
         
-        # Feature importances/contributions (HistGB doesn't expose native feature_importances_ easily)
-        # We will mock an empty JSON for now, can add SHAP later
-        fc_json = "{}"
+        # Feature importances/contributions (LightGBM natively supports this)
+        # We can extract global feature importance easily:
+        importance = dict(zip(GLOBAL_FEATURE_COLS, final_model.feature_importance().tolist()))
+        fc_json = json.dumps(importance)
         
         cursor.execute('''
             INSERT INTO daily_ai_forecasts (symbol, date, probability, feature_contributions)

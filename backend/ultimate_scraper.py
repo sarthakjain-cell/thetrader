@@ -10,8 +10,32 @@ import time
 import random
 import hashlib
 import xml.etree.ElementTree as ET
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trading_system.db")
+
+class RateLimiter:
+    def __init__(self, max_tokens, refill_time):
+        self.max_tokens = max_tokens
+        self.refill_time = refill_time
+        self.tokens = max_tokens
+        self.last_refill = time.time()
+        self.lock = threading.Lock()
+        
+    def wait_and_consume(self):
+        while True:
+            with self.lock:
+                now = time.time()
+                elapsed = now - self.last_refill
+                if elapsed >= self.refill_time:
+                    self.tokens = self.max_tokens
+                    self.last_refill = now
+                
+                if self.tokens > 0:
+                    self.tokens -= 1
+                    return
+            time.sleep(0.5)
 
 NIFTY_SYMBOLS = [
     "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS",
@@ -31,6 +55,8 @@ class UltimateScraper:
     def __init__(self):
         self.session = requests.Session()
         self.init_db()
+        self.mc_limiter = RateLimiter(max_tokens=4, refill_time=60.0) # 4 per min
+        self.yf_limiter = RateLimiter(max_tokens=1, refill_time=2.0)  # 1 per 2s
 
     def init_db(self):
         conn = sqlite3.connect(DB_PATH)
@@ -185,6 +211,7 @@ class UltimateScraper:
         log.info("[Scraper] Initiating YFinance Aggregator...")
         added = 0
         for sym in NIFTY_SYMBOLS:
+            self.yf_limiter.wait_and_consume()
             try:
                 ticker = yf.Ticker(sym)
                 news = ticker.news
@@ -202,10 +229,8 @@ class UltimateScraper:
                         
             except Exception as e:
                 log.error(f"[Scraper] YFinance Error for {sym}: {e}")
-                
-            # Be polite to Yahoo Finance APIs
-            time.sleep(random.uniform(0.5, 1.5))
             
+        log.info(f"-> Acquired {added} new Financial News headlines.")
         return added
 
     def scrape_yfinance_actions(self):
@@ -214,6 +239,7 @@ class UltimateScraper:
         added = 0
         
         for sym in NIFTY_SYMBOLS:
+            self.yf_limiter.wait_and_consume()
             try:
                 ticker = yf.Ticker(sym)
                 actions = ticker.actions
@@ -254,7 +280,7 @@ class UltimateScraper:
             except Exception as e:
                 log.error(f"[Scraper] YFinance Actions Error for {sym}: {e}")
                 
-            time.sleep(2.0) # Strict 2-second throttle as requested
+        log.info(f"-> Logged {added} new corporate events from YFinance.")
         return added
 
     def scrape_moneycontrol_earnings(self):
@@ -262,6 +288,7 @@ class UltimateScraper:
         log.info("[Scraper] Initiating Moneycontrol Earnings Calendar...")
         url = "https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1"
         added = 0
+        self.mc_limiter.wait_and_consume()
         try:
             html = self.safe_request(url)
             if not html: return 0
@@ -310,37 +337,29 @@ class UltimateScraper:
         except Exception as e:
             log.warning(f"[Scraper] Moneycontrol Earnings crash-protected: {e}. Falling back to empty set.")
             
+        log.info(f"-> Logged {added} upcoming earnings from Moneycontrol.")
         return added
 
     def run_all(self):
-        log.info("========== STARTING ULTIMATE SCRAPER ==========")
+        log.info("========== STARTING ULTIMATE SCRAPER (THREADPOOL) ==========")
         total_added = 0
         
-        # 1. Macro Policy
-        rbi_added = self.scrape_rbi_rss()
-        log.info(f"-> Acquired {rbi_added} new RBI macro updates.")
-        total_added += rbi_added
-        
-        # 2. Regulatory Limits
-        sebi_added = self.scrape_sebi_press_releases()
-        log.info(f"-> Acquired {sebi_added} new SEBI regulations.")
-        total_added += sebi_added
-        
-        # 3. Market Sentiment
-        yf_added = self.scrape_yfinance_news()
-        log.info(f"-> Acquired {yf_added} new Financial News headlines.")
-        total_added += yf_added
-        
-        # 4. Corporate Actions (Logging-Only Mode)
-        corp_added = self.scrape_yfinance_actions()
-        log.info(f"-> Logged {corp_added} new corporate events from YFinance.")
-        total_added += corp_added
-        
-        # 5. Earnings Calendar
-        earn_added = self.scrape_moneycontrol_earnings()
-        log.info(f"-> Logged {earn_added} upcoming earnings from Moneycontrol.")
-        total_added += earn_added
-        
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [
+                executor.submit(self.scrape_rbi_rss),
+                executor.submit(self.scrape_sebi_press_releases),
+                executor.submit(self.scrape_yfinance_news),
+                executor.submit(self.scrape_yfinance_actions),
+                executor.submit(self.scrape_moneycontrol_earnings)
+            ]
+            
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                    total_added += result
+                except Exception as e:
+                    log.error(f"Scraper task failed: {e}")
+                    
         log.info(f"========== SCRAPE COMPLETE. Total New Items: {total_added} ==========")
 
 if __name__ == "__main__":
