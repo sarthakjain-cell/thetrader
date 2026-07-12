@@ -1,6 +1,6 @@
 import React from 'react';
 
-type Tab = 'dashboard' | 'scanner' | 'charts' | 'news';
+type Tab = 'home' | 'scanner' | 'charts' | 'portfolio' | 'news';
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -14,38 +14,43 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
       bottom: 0,
       left: 0,
       right: 0,
-      height: '80px',
-      background: 'rgba(15, 23, 42, 0.85)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+      height: '60px',
+      background: '#12151c', /* Upstox bottom nav color */
+      borderTop: '1px solid rgba(255, 255, 255, 0.05)',
       display: 'flex',
-      justifyContent: 'space-around',
+      justifyContent: 'space-between',
       alignItems: 'center',
       zIndex: 1000,
-      paddingBottom: 'env(safe-area-inset-bottom, 16px)'
+      padding: '0 12px',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)'
     }}>
       <NavItem 
-        icon="📊" 
-        label="Dashboard" 
-        isActive={activeTab === 'dashboard'} 
-        onClick={() => setActiveTab('dashboard')} 
+        icon="⌂" 
+        label="HOME" 
+        isActive={activeTab === 'home'} 
+        onClick={() => setActiveTab('home')} 
       />
       <NavItem 
-        icon="🛰️" 
-        label="Scanner" 
+        icon="⚡" 
+        label="SCANNER" 
         isActive={activeTab === 'scanner'} 
         onClick={() => setActiveTab('scanner')} 
       />
       <NavItem 
+        icon="💼" 
+        label="PORTFOLIO" 
+        isActive={activeTab === 'portfolio'} 
+        onClick={() => setActiveTab('portfolio')} 
+      />
+      <NavItem 
         icon="📈" 
-        label="Charts" 
+        label="CHARTS" 
         isActive={activeTab === 'charts'} 
         onClick={() => setActiveTab('charts')} 
       />
       <NavItem 
         icon="📰" 
-        label="News" 
+        label="NEWS" 
         isActive={activeTab === 'news'} 
         onClick={() => setActiveTab('news')} 
       />
@@ -64,16 +69,14 @@ const NavItem: React.FC<{ icon: string, label: string, isActive: boolean, onClic
         justifyContent: 'center',
         gap: '4px',
         cursor: 'pointer',
-        opacity: isActive ? 1 : 0.5,
-        transform: isActive ? 'scale(1.05)' : 'scale(1)',
-        transition: 'all 0.2s ease',
-        width: '25%',
+        color: isActive ? '#5b45ff' : '#8b949e', /* Upstox blurple active color */
+        flex: 1,
       }}
     >
-      <div style={{ fontSize: '1.5rem', filter: isActive ? 'drop-shadow(0 0 8px rgba(255,255,255,0.3))' : 'none' }}>
+      <div style={{ fontSize: '1.2rem', fontWeight: isActive ? 'bold' : 'normal' }}>
         {icon}
       </div>
-      <div style={{ fontSize: '0.75rem', fontWeight: isActive ? 600 : 400, color: isActive ? '#fff' : '#94a3b8' }}>
+      <div style={{ fontSize: '0.65rem', fontWeight: isActive ? 600 : 500, letterSpacing: '0.5px' }}>
         {label}
       </div>
     </div>

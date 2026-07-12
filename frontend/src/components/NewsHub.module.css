@@ -1,0 +1,91 @@
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 16px 16px 8px 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.newsList {
+  display: flex;
+  flex-direction: column;
+}
+
+.newsCard {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: transparent;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.source {
+  font-size: 0.75rem;
+  color: #8b949e;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #8b949e;
+}
+
+.headline {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ffffff;
+  line-height: 1.4;
+}
+
+.impactBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  width: fit-content;
+}
+
+.impactSymbol {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.impactArrow {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.positive {
+  color: #00c897;
+}
+
+.negative {
+  color: #e63946;
+}
+
+.neutral {
+  color: #8b949e;
+}
+
+.emptyState {
+  padding: 32px 16px;
+  text-align: center;
+  color: #8b949e;
+}

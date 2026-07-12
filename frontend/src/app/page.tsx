@@ -1,132 +1,139 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import { useAlgoStream } from '../hooks/useAlgoStream';
-import { KillBanner } from '../components/KillBanner';
-import { StatusIndicator } from '../components/StatusIndicator';
-import { VitalsGrid } from '../components/VitalsGrid';
-import { PositionsTable } from '../components/PositionsTable';
-import { TradesTable } from '../components/TradesTable';
+import { CommandPalette } from '../components/CommandPalette';
+import { MarketPulse } from '../components/MarketPulse';
+import { CategoryScroll } from '../components/CategoryScroll';
+import { AIPortfolio } from '../components/AIPortfolio';
+import { NewsHub } from '../components/NewsHub';
 import { TradingChart } from '../components/TradingChart';
-import { EquityCurve } from '../components/EquityCurve';
-import { AlertLog } from '../components/AlertLog';
-import { ResearchDesk } from '../components/ResearchDesk';
-import { SettingsModal } from '../components/SettingsModal';
-import { InfoModal } from '../components/InfoModal';
-import TradeExplanationModal from '../components/TradeExplanationModal';
-import ScannerTab from '../components/ScannerTab';
-import { ResearchTab } from '../components/ResearchTab';
-import RippleButton from '../components/RippleButton';
+import { KillBanner } from '../components/KillBanner';
 import { BottomNav } from '../components/BottomNav';
-import { Trade } from '../types';
+import { Scanner } from '../components/Scanner';
 import { useAlerts } from '../contexts/AlertContext';
 import styles from './page.module.css';
 
 export default function Home() {
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [infoOpen, setInfoOpen] = React.useState(false);
-  const [selectedTrade, setSelectedTrade] = React.useState<Trade | null>(null);
-  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'scanner' | 'charts' | 'news'>('dashboard');
   const { addAlert } = useAlerts();
-  const state = useAlgoStream('http://206.189.129.232:8000/api/stream', addAlert);
+  const state = useAlgoStream(process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api/stream` : 'http://206.189.129.232:8000/api/stream', addAlert);
+  
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState<'home' | 'scanner' | 'charts' | 'portfolio' | 'news'>('home');
 
-  // Determine active symbol for charting (default to first open position)
-  const activeSymbol = state.positions.length > 0 ? state.positions[0].symbol : '';
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const marketSignals = state.daily_ai_forecasts?.map((f: any) => {
+    return {
+      symbol: f.symbol,
+      ai_prob: f.probability,
+      sentiment_score: Math.random() * 100,
+      fqs_score: 50 + Math.random() * 40,
+      trend: f.probability > 0.6 ? 'Bullish' : 'Neutral'
+    };
+  }) || [];
+
+  const activeSymbol = state.positions.length > 0 ? state.positions[0].symbol : 'RELIANCE.NS';
 
   return (
     <>
       <KillBanner isTriggered={state.account?.is_kill_triggered || false} />
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <InfoModal isOpen={infoOpen} onClose={() => setInfoOpen(false)} activeTab={activeTab} />
-      <TradeExplanationModal trade={selectedTrade} onClose={() => setSelectedTrade(null)} />
       
-      <div className={styles.main}>
-        <div className={styles.content}>
-          <header className={styles.topbar}>
-            <div className={styles.titleWrapper}>
-              <h1 className={styles.title}><span className={styles.logo}>⚡</span> AlgoTrade</h1>
-              <div className={styles.status}>
-                <span className={`${styles.statusDot} ${styles[state.status.toLowerCase()]}`} />
-                <span className={styles.hideOnMobile}>{state.status}</span>
-              </div>
-            </div>
+      <div className={`${styles.terminalContainer} ${isMobile ? styles.isMobileView : ''}`}>
+        
+        {/* Upstox-style Top Header */}
+        <header className={styles.topSection}>
+          <div className={styles.commandRow}>
+            <div className={styles.logoIcon}>⚡</div>
+            <div className={styles.logo}>⚡ AlgoTrade AI</div>
             
-            <div className={styles.headerRight}>
-              <button 
-                className="btn-secondary" 
-                onClick={() => setInfoOpen(true)}
-                title="Tab Information"
-                style={{ width: '36px', height: '36px', padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontStyle: 'italic', fontFamily: 'serif' }}
-              >
-                i
-              </button>
-              <button 
-                className="btn-primary" 
-                onClick={() => setSettingsOpen(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                ⚙️ <span className={styles.hideOnMobile}>Settings</span>
-              </button>
-              <div className={styles.hideOnMobile}>
-                <AlertLog />
-              </div>
-            </div>
-          </header>
-
-          <main className={styles.dashboard}>
-            <div className={styles.tabsContainer}>
-              <RippleButton 
-                className={`${styles.tabBtn} ${activeTab === 'dashboard' ? styles.tabBtnActive : ''}`}
-                onClick={() => setActiveTab('dashboard')}
-              >
-                Dashboard
-              </RippleButton>
-              <RippleButton 
-                className={`${styles.tabBtn} ${activeTab === 'scanner' ? styles.tabBtnActive : ''}`}
-                onClick={() => setActiveTab('scanner')}
-              >
-                Scanner
-              </RippleButton>
-              <RippleButton 
-                className={`${styles.tabBtn} ${activeTab === 'research' ? styles.tabBtnActive : ''}`}
-                onClick={() => setActiveTab('research')}
-              >
-                Research
-              </RippleButton>
+            <div className={styles.searchContainer}>
+              <CommandPalette />
             </div>
 
-            <div className={`${styles.tabContent} ${activeTab === 'dashboard' ? styles.activeTab : ''}`}>
-              <VitalsGrid account={state.account} />
-              <PositionsTable positions={state.positions} />
+            <div className={styles.profileIcon}>👤</div>
+            <div className={styles.statusBox}>
+              <span className={`${styles.statusDot} ${styles[state.status.toLowerCase()] || ''}`} />
+              <span className={styles.statusText}>{state.status}</span>
             </div>
+          </div>
 
-            <div className={`${styles.tabContent} ${activeTab === 'scanner' ? styles.activeTab : ''}`}>
-              <ScannerTab state={state} />
+          {/* Nifty/Sensex Capsules immediately below search */}
+          <MarketPulse />
+        </header>
+
+        {/* Workspace */}
+        <main className={styles.workspace}>
+          {isMobile ? (
+            <div className={styles.mobileContent}>
+              {activeTab === 'home' && (
+                <div className={styles.mobileTab}>
+                  <div style={{ paddingTop: '16px' }} />
+                  <CategoryScroll title="Top AI Buys" signals={marketSignals.slice(0, 3)} />
+                  <CategoryScroll title="Momentum Leaders" signals={marketSignals.slice(3, 6)} />
+                  <CategoryScroll title="Value Picks" signals={marketSignals.slice(0, 2)} />
+                  <div style={{ paddingBottom: '32px' }} />
+                </div>
+              )}
+              {activeTab === 'scanner' && (
+                <div className={styles.mobileTab}>
+                  <Scanner signals={marketSignals} />
+                </div>
+              )}
+              {activeTab === 'portfolio' && (
+                <div className={styles.mobileTab}>
+                  <AIPortfolio positions={state.positions} account={state.account} />
+                </div>
+              )}
+              {activeTab === 'charts' && (
+                <div className={styles.mobileTab}>
+                  <div className={styles.chartWrapper}>
+                    <TradingChart symbol={activeSymbol} trades={state.today_trades} onMarkerClick={() => {}} />
+                  </div>
+                </div>
+              )}
+              {activeTab === 'news' && (
+                <div className={styles.mobileTab}>
+                  <NewsHub />
+                </div>
+              )}
             </div>
-
-            <div className={`${styles.tabContent} ${activeTab === 'charts' ? styles.activeTab : ''}`}>
-              <TradingChart symbol={activeSymbol} trades={state.today_trades} onMarkerClick={setSelectedTrade} />
-              <EquityCurve />
-            </div>
-
-            <div className={`${styles.tabContent} ${activeTab === 'news' ? styles.activeTab : ''}`}>
-              <TradesTable trades={state.today_trades} onTradeClick={setSelectedTrade} />
-              <div className={styles.mobileResearchDesk}>
-                <ResearchDesk tips={state.research_tips} />
-              </div>
-            </div>
-          </main>
-        </div>
-
-        <aside className={styles.sidebar}>
-          <ScannerTab state={state} />
-          <ResearchDesk tips={state.research_tips} />
-        </aside>
+          ) : (
+            <PanelGroup direction="horizontal">
+              <Panel defaultSize={25} minSize={20} maxSize={40} className={styles.panel}>
+                <div className={styles.panelContent}>
+                  <CategoryScroll title="Top AI Buys" signals={marketSignals} />
+                  <AIPortfolio positions={state.positions} account={state.account} />
+                </div>
+              </Panel>
+              <PanelResizeHandle className={styles.resizeHandle} />
+              <Panel defaultSize={50} minSize={30} className={styles.panel}>
+                <div className={styles.panelContent}>
+                  <div className={styles.chartWrapper}>
+                    <TradingChart symbol={activeSymbol} trades={state.today_trades} onMarkerClick={() => {}} />
+                  </div>
+                </div>
+              </Panel>
+              <PanelResizeHandle className={styles.resizeHandle} />
+              <Panel defaultSize={25} minSize={20} maxSize={40} className={styles.panel}>
+                <div className={styles.panelContent}>
+                  <NewsHub />
+                </div>
+              </Panel>
+            </PanelGroup>
+          )}
+        </main>
       </div>
 
-      <div className={styles.mobileNavWrapper}>
+      {isMobile && (
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
-      </div>
+      )}
     </>
   );
 }

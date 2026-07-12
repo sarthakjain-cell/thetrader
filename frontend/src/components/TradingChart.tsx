@@ -20,36 +20,42 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#94a3b8',
+        textColor: '#8b949e', // Upstox secondary text
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.03)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.03)' },
       },
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
       },
-      height: 400,
+      rightPriceScale: {
+        borderColor: 'rgba(255, 255, 255, 0.05)',
+      },
+      // Give initial height, but we will auto-resize
+      height: chartContainerRef.current.clientHeight || 400,
     });
     
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#10b981', downColor: '#ef4444', borderVisible: false,
-      wickUpColor: '#10b981', wickDownColor: '#ef4444',
+      upColor: '#00c897', downColor: '#e63946', borderVisible: false, // Upstox colors
+      wickUpColor: '#00c897', wickDownColor: '#e63946',
     });
     
     chartRef.current = chart;
     seriesRef.current = candlestickSeries;
     
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver(entries => {
+      if (entries.length === 0 || entries[0].target !== chartContainerRef.current) { return; }
+      const newRect = entries[0].contentRect;
+      chart.applyOptions({ height: newRect.height, width: newRect.width });
+    });
+    
+    resizeObserver.observe(chartContainerRef.current);
     
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       chart.remove();
     };
   }, []);
@@ -60,7 +66,8 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
     const fetchBars = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/bars/${symbol}`);
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://206.189.129.232:8000';
+        const res = await fetch(`${baseUrl}/api/bars/${symbol}`);
         const data = await res.json();
         
         if (data.length === 0) return;
@@ -92,7 +99,7 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
           markers.push({ 
             time: findClosestTime(entryTimeUnix), 
             position: 'belowBar', 
-            color: '#10b981', 
+            color: '#00c897', 
             shape: 'arrowUp', 
             text: `Buy @ ${t.entry_price}`,
             id: `trade_${t.id}`
@@ -103,7 +110,7 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
             markers.push({ 
               time: findClosestTime(exitTimeUnix), 
               position: 'aboveBar', 
-              color: '#ef4444', 
+              color: '#e63946', 
               shape: 'arrowDown', 
               text: `Sell @ ${t.exit_price}`,
               id: `trade_${t.id}`
@@ -114,23 +121,6 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
         markers.sort((a,b) => a.time - b.time);
         seriesRef.current?.setMarkers(markers);
         chartRef.current?.timeScale().fitContent();
-        
-        // Add click handler for markers (Lightweight charts fires click on series)
-        chartRef.current?.subscribeClick((param) => {
-          if (!param.point || !param.seriesData || !onMarkerClick) return;
-          // Actually, lightweight charts doesn't natively expose marker clicks well.
-          // We can approximate by checking if the clicked time matches a trade.
-          const time = param.time;
-          if (time) {
-             const matchedTrade = trades.find(t => {
-                if (t.symbol !== symbol) return false;
-                const entryUnix = new Date(t.entry_time).getTime() / 1000;
-                const exitUnix = t.exit_time ? new Date(t.exit_time).getTime() / 1000 : 0;
-                return Math.abs(entryUnix - (time as number)) < 300 || Math.abs(exitUnix - (time as number)) < 300;
-             });
-             if (matchedTrade) onMarkerClick(matchedTrade);
-          }
-        });
         
       } catch (err) {
         console.error("Failed to fetch bars", err);
@@ -145,15 +135,15 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
   }, [symbol, trades]);
 
   return (
-    <div className="glass-panel" style={{ marginBottom: 'var(--space-6)' }}>
-      <div className="flex-between" style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--panel-border)' }}>
-        <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Live Chart: {symbol || 'Select a symbol'}</h3>
-        {loading && <span style={{fontSize: 'var(--text-xs)', color: 'var(--text-muted)'}}>Loading...</span>}
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#12151c' }}>
+      <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#ffffff', margin: 0 }}>{symbol || 'Select a symbol'}</h3>
+        {loading && <span style={{fontSize: '0.8rem', color: '#8b949e'}}>Loading data...</span>}
       </div>
       {symbol ? (
-        <div ref={chartContainerRef} style={{ width: '100%' }} />
+        <div ref={chartContainerRef} style={{ flex: 1, width: '100%' }} />
       ) : (
-        <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--text-muted)' }}>
+        <div style={{ padding: '24px', textAlign: 'center', color: '#8b949e' }}>
           Please select an active position to view chart
         </div>
       )}

@@ -1,155 +1,143 @@
-.main {
+.terminalContainer {
   display: flex;
-  height: 100vh;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: #0b0e14; /* Upstox-like deep dark background */
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+
+.terminalContainer.isMobileView {
+  height: calc(100% - 60px); /* Leave room for BottomNav */
+}
+
+/* TOP HEADER */
+.topSection {
+  padding: 48px 16px 8px 16px; /* Hardcoded 48px to clear Android status bar/notch */
+  background: #12151c; /* Slightly lighter than root */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* COMMAND ROW - Matches Upstox top bar */
+.commandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.logoIcon {
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+}
+
+.searchContainer {
+  flex: 1;
+}
+
+.profileIcon {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  color: #8b949e;
+}
+
+/* DESKTOP EXTRAS */
+.logo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  display: none;
+}
+.statusBox {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .logo { display: block; }
+  .statusBox { display: flex; }
+  .logoIcon { display: none; }
+  .profileIcon { display: none; }
+  .topSection {
+    flex-direction: row;
+    align-items: center;
+    padding: 16px 24px;
+  }
+}
+
+.workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* MOBILE CONTENT */
+.mobileContent {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-.content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--panel-border);
-  background: var(--bg-color);
-  z-index: 10;
-}
-
-.titleWrapper {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.title {
-  font-size: var(--text-xl);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.logo {
-  color: var(--accent-info);
-}
-
-.status {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.statusDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--text-muted);
-}
-.statusDot.connected { background-color: var(--accent-positive); box-shadow: 0 0 8px var(--accent-positive); }
-.statusDot.disconnected { background-color: var(--accent-negative); }
-.statusDot.connecting { background-color: var(--accent-neutral); }
-
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.dashboard {
-  padding: var(--space-6);
-  max-width: 1200px;
+.mobileTab {
   width: 100%;
-  margin: 0 auto;
-}
-
-.sidebar {
-  width: 350px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--panel-border);
-  background: var(--bg-color);
+  height: 100%;
   overflow-y: auto;
-}
-
-.tabContent {
-  display: block; /* Default for desktop where tabs are ignored */
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.mobileTab::-webkit-scrollbar {
+  display: none;
 }
 
-.mobileNavWrapper {
-  display: none; /* Hidden on desktop */
+/* DESKTOP PANELS */
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px;
 }
-
-.mobileResearchDesk {
-  display: none; /* Hidden on desktop, shown only in mobile 'news' tab */
+.panelContent {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .main {
-    flex-direction: column;
-    height: auto;
-    overflow: auto;
-    padding-bottom: 100px; /* Space for Bottom Nav */
-  }
-  .content {
-    overflow-y: visible;
-  }
-  .sidebar {
-    display: none; /* Hide desktop sidebar entirely on mobile */
-  }
-  .dashboard {
-    padding: var(--space-4);
-  }
-  
-  .tabContent {
-    display: none; /* Hide all tabs by default on mobile */
-  }
-  
-  .activeTab {
-    display: flex; /* Show only active tab on mobile */
-    flex-direction: column;
-    gap: var(--space-6);
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-  
-  .mobileNavWrapper {
-    display: block;
-  }
-  
-  .mobileResearchDesk {
-    display: block;
-  }
+.panelContent::-webkit-scrollbar {
+  display: none;
 }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.resizeHandle {
+  width: 8px;
+  cursor: col-resize;
 }
-
-@media (max-width: 600px) {
-  .title {
-    font-size: var(--text-lg);
-  }
-  .titleWrapper {
-    gap: var(--space-2);
-  }
-  .hideOnMobile {
-    display: none !important;
-  }
-  .topbar {
-    padding: var(--space-3) var(--space-4);
-  }
+.chartWrapper {
+  flex: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #12151c;
+  height: 100%;
+  min-height: 400px;
 }

@@ -1,0 +1,33 @@
+.container {
+  width: 100%;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05); /* Soft transparent background */
+  border-radius: 8px; /* Upstox uses 8px */
+  padding: 8px 12px;
+  gap: 8px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.icon {
+  font-size: 0.9rem;
+  color: #8b949e;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.input::placeholder {
+  color: #6e7681;
+}

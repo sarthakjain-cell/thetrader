@@ -1,0 +1,75 @@
+.scrollContainer {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 4px 0 12px 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Upstox faint separator */
+}
+
+.scrollContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.capsule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 140px; /* Smaller, like Upstox capsules */
+  background-color: transparent;
+  padding: 4px 8px;
+  color: #ffffff;
+  border-right: 1px solid rgba(255, 255, 255, 0.05); /* Very subtle divider between capsules */
+}
+
+.capsule:last-child {
+  border-right: none;
+}
+
+.leftInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: 0.75rem;
+  color: #8b949e;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'Inter', monospace;
+}
+
+.rightInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.change {
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.positive {
+  color: #00c897;
+}
+
+.negative {
+  color: #e63946;
+}
+
+.sparkline {
+  display: none; /* Remove sparkline to match Upstox minimalist capsules */
+}

@@ -1,0 +1,137 @@
+.container {
+  width: 100%;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.viewAll {
+  font-size: 0.85rem;
+  color: #5b45ff; /* Upstox blurple */
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cardScroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 0 16px 24px 16px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.cardScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.stockCard {
+  min-width: 160px;
+  background-color: #1a1d23; /* Upstox card color */
+  border-radius: 8px; /* Softer radius */
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.symbolInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoPlaceholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.symbol {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.priceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.price {
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arrow {
+  font-size: 0.8rem;
+}
+
+.positive {
+  color: #00c897;
+}
+
+.negative {
+  color: #e63946;
+}
+
+.change {
+  font-size: 0.8rem;
+  color: #8b949e;
+}
+
+.cardBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 8px;
+  font-size: 0.75rem;
+  color: #8b949e;
+}
+
+.buyAction {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #8b949e;
+  font-weight: 500;
+}
+
+.emptyState {
+  width: 100%;
+  padding: 24px;
+  text-align: center;
+  color: #8b949e;
+  font-size: 0.9rem;
+}

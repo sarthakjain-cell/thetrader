@@ -6,6 +6,8 @@ import sqlite3
 import pandas as pd
 import asyncio
 import json
+import time
+import yfinance as yf
 
 app = FastAPI(title="Algotrade Intraday Dashboard")
 
@@ -120,11 +122,100 @@ def fetch_dashboard_state(last_ah_id=0):
         "alerts": alerts,
         "after_hours_research": after_hours_research,
         "pre_market_intelligence": pre_market_intelligence,
+        "daily_ai_forecasts": [{"symbol": k, "probability": v} for k, v in forecasts_dict.items()],
         "rolling_metrics": {
             "pnl": rolling_pnl,
             "trades": int(total_trades)
         }
     }, new_last_ah_id
+
+# In-memory cache for indices to prevent rate limits
+indices_cache = {
+    "data": [],
+    "last_updated": 0
+}
+
+@app.get("/api/indices")
+async def get_indices():
+    global indices_cache
+    now = time.time()
+    
+    # Serve from cache if less than 60 seconds old
+    if now - indices_cache["last_updated"] < 60 and indices_cache["data"]:
+        return indices_cache["data"]
+        
+    symbols = {
+        "^NSEI": "Nifty 50",
+        "^BSESN": "Sensex",
+        "^NSEBANK": "Bank Nifty",
+        "^INDIAVIX": "India VIX"
+    }
+    
+    results = []
+    
+    # Run in thread to not block event loop
+    def fetch_indices():
+        data = []
+        try:
+            tickers = yf.Tickers(" ".join(symbols.keys()))
+            for sym, name in symbols.items():
+                df = tickers.tickers[sym].history(period="1d", interval="5m")
+                if not df.empty:
+                    current = df['Close'].iloc[-1]
+                    # Get yesterday's close or first available today if market just opened
+                    # Actually, yfinance gives 'Previous Close' via info, but info is slow.
+                    # We can use the first 5m open of the day as a rough base, or fetch 2d.
+                    # Fetching 5d ensures we have yesterday's close. Let's just fetch 5d 5m.
+                    df_5d = tickers.tickers[sym].history(period="5d", interval="1d")
+                    if len(df_5d) >= 2:
+                        prev_close = df_5d['Close'].iloc[-2]
+                    else:
+                        prev_close = df['Open'].iloc[0]
+                        
+                    change = current - prev_close
+                    pct_change = (change / prev_close) * 100
+                    
+                    # Sparkline: last 12 points (1 hour of 5m data)
+                    sparkline = df['Close'].tail(12).tolist()
+                    
+                    data.append({
+                        "name": name,
+                        "value": round(current, 2),
+                        "change": round(change, 2),
+                        "pct_change": round(pct_change, 2),
+                        "sparkline": sparkline
+                    })
+        except Exception as e:
+            print(f"Error fetching indices: {e}")
+        return data
+
+    new_data = await asyncio.to_thread(fetch_indices)
+    if new_data:
+        indices_cache["data"] = new_data
+        indices_cache["last_updated"] = now
+        
+    return indices_cache["data"]
+
+@app.get("/api/news")
+async def get_news(category: str = "All", limit: int = 20, offset: int = 0):
+    conn = get_db()
+    # If category != All, we filter by related_tickers. 
+    # For now, related_tickers just has the raw ticker or MACRO_INDIA.
+    # Future: we will build the full sector mapper in the Symbol Extractor job.
+    if category.lower() != "all":
+        query = f"SELECT * FROM scraped_news WHERE related_tickers LIKE '%{category}%' ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"
+    else:
+        query = f"SELECT * FROM scraped_news ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"
+        
+    try:
+        df = pd.read_sql(query, conn)
+        news = df.to_dict(orient="records")
+    except Exception:
+        news = []
+    finally:
+        conn.close()
+        
+    return news
 
 
 
