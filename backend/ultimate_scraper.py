@@ -54,6 +54,21 @@ class UltimateScraper:
             cursor.execute('CREATE UNIQUE INDEX idx_content_hash ON scraped_news(content_hash)')
         except:
             pass
+            
+        # Phase 2: Corporate Events (Logging-Only Mode)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS corporate_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                event_value REAL,
+                source TEXT NOT NULL,
+                announce_date TEXT,
+                ex_date TEXT,
+                UNIQUE(date, symbol, event_type, source)
+            )
+        ''')
         conn.commit()
         conn.close()
 
@@ -193,6 +208,110 @@ class UltimateScraper:
             
         return added
 
+    def scrape_yfinance_actions(self):
+        """Phase 2: Safely log post-facto Dividends & Splits (ex-dates) with throttling."""
+        log.info("[Scraper] Initiating YFinance Corporate Actions (Dividends/Splits)...")
+        added = 0
+        
+        for sym in NIFTY_SYMBOLS:
+            try:
+                ticker = yf.Ticker(sym)
+                actions = ticker.actions
+                if not actions.empty:
+                    recent_actions = actions.tail(5)
+                    for idx, row in recent_actions.iterrows():
+                        ex_date_str = idx.strftime('%Y-%m-%d')
+                        div = float(row['Dividends'])
+                        split = float(row['Stock Splits'])
+                        
+                        conn = sqlite3.connect(DB_PATH)
+                        cursor = conn.cursor()
+                        
+                        if div > 0:
+                            try:
+                                cursor.execute('''
+                                    INSERT INTO corporate_events 
+                                    (date, symbol, event_type, event_value, source, ex_date)
+                                    VALUES (?, ?, ?, ?, ?, ?)
+                                ''', (ex_date_str, sym, 'Dividend', div, 'yfinance', ex_date_str))
+                                conn.commit()
+                                added += 1
+                            except sqlite3.IntegrityError:
+                                pass
+                        
+                        if split > 0:
+                            try:
+                                cursor.execute('''
+                                    INSERT INTO corporate_events 
+                                    (date, symbol, event_type, event_value, source, ex_date)
+                                    VALUES (?, ?, ?, ?, ?, ?)
+                                ''', (ex_date_str, sym, 'Split', split, 'yfinance', ex_date_str))
+                                conn.commit()
+                                added += 1
+                            except sqlite3.IntegrityError:
+                                pass
+                        conn.close()
+            except Exception as e:
+                log.error(f"[Scraper] YFinance Actions Error for {sym}: {e}")
+                
+            time.sleep(2.0) # Strict 2-second throttle as requested
+        return added
+
+    def scrape_moneycontrol_earnings(self):
+        """Phase 2: Crash-protected earnings calendar scraper."""
+        log.info("[Scraper] Initiating Moneycontrol Earnings Calendar...")
+        url = "https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1"
+        added = 0
+        try:
+            html = self.safe_request(url)
+            if not html: return 0
+            
+            soup = BeautifulSoup(html, 'html.parser')
+            table = soup.find('table', {'class': 'mctable1'})
+            if not table:
+                log.warning("[Scraper] Moneycontrol parsing warning: Could not find 'mctable1'. Falling back to empty set.")
+                return 0
+                
+            rows = table.find_all('tr')
+            for row in rows:
+                cols = row.find_all('td')
+                if len(cols) >= 3:
+                    company_name = cols[0].get_text(strip=True).upper()
+                    board_date = cols[1].get_text(strip=True)
+                    purpose = cols[2].get_text(strip=True)
+                    
+                    matched_sym = None
+                    for sym in NIFTY_SYMBOLS:
+                        base = sym.replace('.NS', '')
+                        if base in company_name or company_name.startswith(base[:5]):
+                            matched_sym = sym
+                            break
+                            
+                    if matched_sym and ('Result' in purpose or 'Audited' in purpose):
+                        try:
+                            parsed_date = datetime.strptime(board_date, "%d-%b-%y").strftime("%Y-%m-%d")
+                        except:
+                            parsed_date = board_date
+                            
+                        conn = sqlite3.connect(DB_PATH)
+                        cursor = conn.cursor()
+                        try:
+                            # Log as 'Earnings' with the board_meeting_date as announce_date
+                            cursor.execute('''
+                                INSERT INTO corporate_events 
+                                (date, symbol, event_type, event_value, source, announce_date)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            ''', (parsed_date, matched_sym, 'Earnings', 0, 'moneycontrol', parsed_date))
+                            conn.commit()
+                            added += 1
+                        except sqlite3.IntegrityError:
+                            pass
+                        conn.close()
+        except Exception as e:
+            log.warning(f"[Scraper] Moneycontrol Earnings crash-protected: {e}. Falling back to empty set.")
+            
+        return added
+
     def run_all(self):
         log.info("========== STARTING ULTIMATE SCRAPER ==========")
         total_added = 0
@@ -211,6 +330,16 @@ class UltimateScraper:
         yf_added = self.scrape_yfinance_news()
         log.info(f"-> Acquired {yf_added} new Financial News headlines.")
         total_added += yf_added
+        
+        # 4. Corporate Actions (Logging-Only Mode)
+        corp_added = self.scrape_yfinance_actions()
+        log.info(f"-> Logged {corp_added} new corporate events from YFinance.")
+        total_added += corp_added
+        
+        # 5. Earnings Calendar
+        earn_added = self.scrape_moneycontrol_earnings()
+        log.info(f"-> Logged {earn_added} upcoming earnings from Moneycontrol.")
+        total_added += earn_added
         
         log.info(f"========== SCRAPE COMPLETE. Total New Items: {total_added} ==========")
 
