@@ -11,6 +11,7 @@ const initialState: DashboardState = {
   market_signals: [],
   after_hours_research: [],
   pre_market_intelligence: [],
+  strategies: [],
   last_updated: null,
 };
 
@@ -48,6 +49,7 @@ function streamReducer(state: DashboardState, action: StreamAction): DashboardSt
           : state.after_hours_research,
           
         pre_market_intelligence: data.pre_market_intelligence || state.pre_market_intelligence,
+        strategies: data.strategies || [],
         last_updated: Date.now(),
       };
       

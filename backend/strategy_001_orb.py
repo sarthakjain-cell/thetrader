@@ -1,64 +1,60 @@
 from strategy_base import BaseStrategy
 import pandas as pd
-import ta
 
 class Strategy001ORB(BaseStrategy):
     def __init__(self):
         super().__init__("S001_ORB", "AI Open Range Breakout")
-        self.orb_bars = 6 # 30 min if 5 min bars
-        self.orb_highs = {}
         
-    def evaluate(self, symbol: str, df: pd.DataFrame, context: dict) -> dict:
+    def evaluate(self, symbol: str, current_bar: pd.Series, context: dict) -> dict:
         signal_dict = {"signal": "HOLD", "reason": "", "stop_loss": None, "target": None, "conviction": 0.5}
         
-        if len(df) < self.orb_bars:
-            signal_dict["reason"] = f"Waiting for ORB formation ({len(df)}/{self.orb_bars} bars)"
+        # Check if ORB has formed (feature_engine returns NaN or something if not enough bars, 
+        # but feature_engine sets it to max high if <6 bars. We assume it's valid if after 09:45)
+        # Note: In backtesting, we just rely on ORB_High existing.
+        
+        if 'ORB_High' not in current_bar or pd.isna(current_bar['ORB_High']):
+            signal_dict["reason"] = "Waiting for ORB formation"
             return signal_dict
             
-        if symbol not in self.orb_highs:
-            self.orb_highs[symbol] = df.iloc[:self.orb_bars]['High'].max()
-            
-        latest_bar = df.iloc[-1]
-        price = latest_bar['Close']
+        price = current_bar['Close']
+        orb_high = current_bar['ORB_High']
         
-        if price > self.orb_highs[symbol]:
-            # Calculate ATR for stops
-            df_ta = df.copy()
-            atr = 0.0
-            if len(df_ta) >= 14:
-                atr_ind = ta.volatility.AverageTrueRange(df_ta['High'], df_ta['Low'], df_ta['Close'], window=14)
-                atr = atr_ind.average_true_range().iloc[-1]
-            
-            if atr == 0:
-                atr = price * 0.005 # fallback 0.5%
+        if price > orb_high:
+            atr = current_bar.get('ATR_14', price * 0.005)
                 
             stop_loss = price - (atr * 1.0)
             target = price + (atr * 2.0)
             
-            # Check context vetoes
-            if symbol in context.get('active_negative_stocks', set()):
-                signal_dict["signal"] = "VETO"
-                signal_dict["reason"] = "MACRO VETO: Active global headwind."
+            # Check Sentiment Veto
+            sentiment = context.get('sentiment', {}).get(symbol, 0)
+            macro_neg = context.get('active_negative_stocks', set())
+            
+            if sentiment < -0.3:
+                signal_dict["reason"] = f"VETO: Negative Sentiment ({sentiment:.2f})"
+                return signal_dict
+            if symbol in macro_neg:
+                signal_dict["reason"] = "VETO: Macro Headwind Active"
                 return signal_dict
                 
             signal_dict["signal"] = "BUY"
-            signal_dict["reason"] = f"ORB Breakout above {self.orb_highs[symbol]:.2f}"
+            signal_dict["reason"] = f"ORB Breakout above {orb_high:.2f}"
             signal_dict["stop_loss"] = stop_loss
             signal_dict["target"] = target
             signal_dict["conviction"] = 0.8
         else:
-            signal_dict["reason"] = f"Price {price:.2f} below ORB high {self.orb_highs[symbol]:.2f}"
+            signal_dict["reason"] = f"Price {price:.2f} below ORB high {orb_high:.2f}"
             
         return signal_dict
 
-    def manage_position(self, symbol: str, position: dict, df: pd.DataFrame) -> dict:
-        latest_bar = df.iloc[-1]
-        low = latest_bar['Low']
-        high = latest_bar['High']
+    def manage_position(self, symbol: str, position: dict, current_bar: pd.Series) -> dict:
+        low = current_bar['Low']
+        high = current_bar['High']
+        open_price = current_bar['Open']
         
         if low <= position['stop_loss']:
-            return {"action": "CLOSE", "reason": "Stop Loss Hit", "exit_price": min(latest_bar['Open'], position['stop_loss'])}
+            return {"action": "CLOSE", "reason": "Stop Loss Hit", "exit_price": min(open_price, position['stop_loss'])}
         elif high >= position['target']:
-            return {"action": "CLOSE", "reason": "Target Hit", "exit_price": max(latest_bar['Open'], position['target'])}
+            return {"action": "CLOSE", "reason": "Target Hit", "exit_price": max(open_price, position['target'])}
             
         return {"action": "HOLD"}
+

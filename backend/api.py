@@ -110,6 +110,13 @@ def fetch_dashboard_state(last_ah_id=0):
         pmi_df = pd.read_sql("SELECT * FROM pre_market_intelligence", conn)
         pre_market_intelligence = pmi_df.to_dict(orient="records")
 
+    # Fetch Strategy Performance
+    try:
+        strat_df = pd.read_sql("SELECT strategy_id as id, profit_factor as pf, win_rate, total_trades as trades FROM generated_strategies ORDER BY profit_factor DESC", conn)
+        strategies = strat_df.to_dict(orient="records")
+    except Exception as e:
+        strategies = []
+
     conn.close()
     
     return {
@@ -126,7 +133,8 @@ def fetch_dashboard_state(last_ah_id=0):
         "rolling_metrics": {
             "pnl": rolling_pnl,
             "trades": int(total_trades)
-        }
+        },
+        "strategies": strategies
     }, new_last_ah_id
 
 # In-memory cache for indices to prevent rate limits

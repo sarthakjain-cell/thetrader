@@ -66,6 +66,18 @@ export interface PreMarketIntelligence {
 
 export type ConnectionStatus = 'IDLE' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'CLOSED' | 'ERROR';
 
+export interface StrategyPerformance {
+  strategy_id: string;
+  name: string;
+  description: string;
+  is_active: number;
+  total_trades: number;
+  win_rate: number;
+  profit_factor: number;
+  net_pnl: number;
+  max_drawdown: number;
+}
+
 export interface DashboardState {
   status: ConnectionStatus;
   market_status: 'OPEN' | 'CLOSED';
@@ -76,6 +88,7 @@ export interface DashboardState {
   market_signals: MarketSignal[];
   after_hours_research: AfterHoursLog[];
   pre_market_intelligence: PreMarketIntelligence[];
+  strategies: StrategyPerformance[];
   last_updated: number | null; // Timestamp
 }
 

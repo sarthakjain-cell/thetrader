@@ -89,7 +89,7 @@ export default function Home() {
               )}
               {activeTab === 'portfolio' && (
                 <div className={styles.mobileTab}>
-                  <AIPortfolio positions={state.positions} account={state.account} />
+                  <AIPortfolio positions={state.positions} account={state.account} strategies={state.strategies} />
                 </div>
               )}
               {activeTab === 'charts' && (

@@ -7,10 +7,9 @@ class BaseStrategy(ABC):
         self.name = name
 
     @abstractmethod
-    def evaluate(self, symbol: str, df: pd.DataFrame, context: dict) -> dict:
+    def evaluate(self, symbol: str, current_bar: pd.Series, context: dict) -> dict:
         """
-        Evaluate the latest market data and return a trading signal.
-        context can contain global macro alerts or regimes.
+        Evaluate the pre-computed current_bar (which includes features) and return a trading signal.
         
         Returns:
         {
@@ -24,7 +23,7 @@ class BaseStrategy(ABC):
         pass
     
     @abstractmethod
-    def manage_position(self, symbol: str, current_position: dict, df: pd.DataFrame) -> dict:
+    def manage_position(self, symbol: str, current_position: dict, current_bar: pd.Series) -> dict:
         """
         Manage an open position.
         
