@@ -132,13 +132,21 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
     fetchBars();
     const interval = setInterval(fetchBars, 30000);
     return () => clearInterval(interval);
-  }, [symbol, trades]);
+  }, [symbol, JSON.stringify(trades)]);
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#12151c' }}>
-      <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#ffffff', margin: 0 }}>{symbol || 'Select a symbol'}</h3>
-        {loading && <span style={{fontSize: '0.8rem', color: '#8b949e'}}>Loading data...</span>}
+      <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: 'rgba(255, 255, 255, 0.01)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#ffffff', margin: 0, letterSpacing: '-0.3px' }}>
+            {symbol ? `${symbol} Execution Chart` : 'Live AI Execution Charts'}
+          </h3>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.4' }}>
+            Visualizes the AI's exact entry and exit signals directly on the live price action. <br/>
+            Select a position from your Portfolio to view its historical execution logic.
+          </span>
+        </div>
+        {loading && <span style={{fontSize: '0.8rem', color: '#8b949e', marginTop: '4px'}}>Syncing data...</span>}
       </div>
       {symbol ? (
         <div ref={chartContainerRef} style={{ flex: 1, width: '100%' }} />

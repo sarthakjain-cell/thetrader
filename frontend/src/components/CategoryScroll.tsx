@@ -14,6 +14,7 @@ interface MarketSignal {
 interface CategoryScrollProps {
   title: string;
   signals: MarketSignal[];
+  onStockClick?: (symbol: string) => void;
 }
 
 const logoDomains: Record<string, string> = {
@@ -25,7 +26,7 @@ const logoDomains: Record<string, string> = {
   'SBIN': 'sbi.co.in'
 };
 
-export const CategoryScroll: React.FC<CategoryScrollProps> = ({ title, signals }) => {
+export const CategoryScroll: React.FC<CategoryScrollProps> = ({ title, signals, onStockClick }) => {
   return (
     <div className={styles.container}>
       {/* Upstox Style Section Header */}
@@ -51,7 +52,12 @@ export const CategoryScroll: React.FC<CategoryScrollProps> = ({ title, signals }
             const logoUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
 
             return (
-              <div key={sig.symbol} className={styles.stockCard}>
+              <div 
+                key={sig.symbol} 
+                className={styles.stockCard}
+                onClick={() => onStockClick && onStockClick(sig.symbol)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className={styles.cardTop}>
                   <div className={styles.symbolInfo}>
                     <div className={styles.logoPlaceholder}>

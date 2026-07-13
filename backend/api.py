@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
 import sqlite3
 import pandas as pd
@@ -48,6 +48,23 @@ def fetch_dashboard_state(last_ah_id=0):
         
     # 2. Positions
     pos_df = pd.read_sql("SELECT * FROM paper_positions", conn)
+    if not pos_df.empty:
+        if 'current_price' not in pos_df.columns:
+            pos_df['current_price'] = pos_df['entry_price']
+        if 'unrealized_pnl' not in pos_df.columns:
+            pos_df['unrealized_pnl'] = 0.0
+            
+        # Optional: Try to join with market_signals to get real-time price
+        try:
+            sig_df = pd.read_sql("SELECT symbol, last_price FROM market_signals", conn)
+            if not sig_df.empty:
+                pos_df = pd.merge(pos_df, sig_df, on="symbol", how="left")
+                pos_df['current_price'] = pos_df['last_price'].fillna(pos_df['current_price'])
+                pos_df['unrealized_pnl'] = (pos_df['current_price'] - pos_df['entry_price']) * pos_df['qty']
+                pos_df = pos_df.drop(columns=['last_price'])
+        except:
+            pass
+            
     positions = pos_df.to_dict(orient="records")
     
     # 3. Today's Trades
@@ -112,9 +129,24 @@ def fetch_dashboard_state(last_ah_id=0):
 
     # Fetch Strategy Performance
     try:
-        strat_df = pd.read_sql("SELECT strategy_id as id, profit_factor as pf, win_rate, total_trades as trades FROM generated_strategies ORDER BY profit_factor DESC", conn)
+        strat_df = pd.read_sql("SELECT strategy_id, profit_factor, win_rate, total_trades FROM generated_strategies ORDER BY profit_factor DESC", conn)
+        
+        # Calculate live PnL per strategy
+        pnl_df = pd.read_sql("SELECT strategy_id, sum(pnl) as net_pnl FROM paper_trades GROUP BY strategy_id", conn)
+        if not pnl_df.empty:
+            strat_df = pd.merge(strat_df, pnl_df, on="strategy_id", how="left")
+            strat_df['net_pnl'] = strat_df['net_pnl'].fillna(0.0)
+        else:
+            strat_df['net_pnl'] = 0.0
+            
+        strat_df['name'] = strat_df['strategy_id']
+        strat_df['description'] = 'AI Managed Strategy'
+        strat_df['is_active'] = 1
+        strat_df['max_drawdown'] = 0.0
+        
         strategies = strat_df.to_dict(orient="records")
     except Exception as e:
+        print(f"Strategy fetch error: {e}")
         strategies = []
 
     conn.close()
@@ -247,6 +279,151 @@ async def get_bars(symbol: str):
     df['value'] = df['volume']
     records = df[['time', 'open', 'high', 'low', 'close', 'value']].to_dict(orient='records')
     return records
+
+@app.get("/api/insights/{symbol}")
+async def get_insights(symbol: str):
+    # Map symbols like 'RELIANCE' to 'RELIANCE.NS' if missing suffix
+    yf_symbol = symbol if ".NS" in symbol else f"{symbol.split('.')[0]}.NS"
+    
+    def fetch_yf():
+        try:
+            t = yf.Ticker(yf_symbol)
+            info = t.info
+            
+            fundamentals = {
+                "todays_low": info.get("regularMarketDayLow", 0),
+                "todays_high": info.get("regularMarketDayHigh", 0),
+                "52_week_low": info.get("fiftyTwoWeekLow", 0),
+                "52_week_high": info.get("fiftyTwoWeekHigh", 0),
+                "open": info.get("regularMarketOpen", 0),
+                "prev_close": info.get("regularMarketPreviousClose", 0),
+                "volume": info.get("regularMarketVolume", 0),
+                "mkt_cap": info.get("marketCap", 0),
+                "pe_ratio": info.get("trailingPE", 0),
+                "pb_ratio": info.get("priceToBook", 0),
+                "roe": info.get("returnOnEquity", 0),
+                "eps": info.get("trailingEps", 0),
+                "div_yield": info.get("dividendYield", 0),
+                "book_value": info.get("bookValue", 0),
+                "debt_to_equity": info.get("debtToEquity", 0),
+                "industry_pe": info.get("trailingPegRatio", 0), # Proxy
+                "face_value": 1,
+                "about": info.get("longBusinessSummary", "")
+            }
+            
+            # Financials (Quarterly)
+            financials = []
+            try:
+                inc = t.quarterly_income_stmt
+                dates = inc.columns
+                for d in dates[:5]:
+                    financials.append({
+                        "label": str(d)[:7], # YYYY-MM
+                        "rev": float(inc.loc["Total Revenue", d]) if "Total Revenue" in inc.index else 0,
+                        "prof": float(inc.loc["Net Income", d]) if "Net Income" in inc.index else 0
+                    })
+                financials.reverse() # Chronological
+            except:
+                pass
+                
+            # Shareholding
+            shareholding = {
+                "Promoters": 0,
+                "Institutions": 0,
+                "Retail": 0
+            }
+            try:
+                holders = t.major_holders
+                insiders = float(holders.loc[holders['Breakdown'] == 'insidersPercentHeld', 'Value'].values[0]) * 100
+                inst = float(holders.loc[holders['Breakdown'] == 'institutionsPercentHeld', 'Value'].values[0]) * 100
+                shareholding = {
+                    "Promoters": round(insiders, 2),
+                    "Institutions": round(inst, 2),
+                    "Retail": round(100 - insiders - inst, 2)
+                }
+            except:
+                pass
+                
+            return {
+                "fundamentals": fundamentals,
+                "financials": financials,
+                "shareholding": shareholding
+            }
+        except Exception as e:
+            print(f"Error fetching insights for {yf_symbol}: {e}")
+            return None
+            
+    data = await asyncio.to_thread(fetch_yf)
+    return data or {}
+
+@app.post("/api/order")
+async def place_order(request: Request):
+    try:
+        data = await request.json()
+        symbol = data.get('symbol')
+        action = data.get('action') # 'BUY' or 'SELL'
+        price = data.get('price', 0.0)
+        qty = data.get('qty', 10)
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Get account equity
+        cursor.execute("SELECT equity FROM paper_account WHERE id=1")
+        acc = cursor.fetchone()
+        if not acc:
+            conn.close()
+            return JSONResponse({"status": "error", "message": "Account not found"})
+        
+        equity = acc[0]
+        cost = price * qty
+        
+        if action == 'BUY':
+            if equity < cost:
+                conn.close()
+                return JSONResponse({"status": "error", "message": "Insufficient funds"})
+                
+            cursor.execute("UPDATE paper_account SET equity = equity - ? WHERE id=1", (cost,))
+            
+            # Upsert position
+            cursor.execute("SELECT qty, entry_price FROM paper_positions WHERE symbol=?", (symbol,))
+            pos = cursor.fetchone()
+            if pos:
+                new_qty = pos[0] + qty
+                new_entry = ((pos[1] * pos[0]) + cost) / new_qty
+                cursor.execute("UPDATE paper_positions SET qty=?, entry_price=? WHERE symbol=?", (new_qty, new_entry, symbol))
+            else:
+                import datetime
+                now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                cursor.execute("INSERT INTO paper_positions (symbol, qty, entry_price, strategy_id, entry_time, stop_loss, target) VALUES (?, ?, ?, ?, ?, ?, ?)", (symbol, qty, price, "MANUAL_OVERRIDE", now_str, 0.0, 0.0))
+                
+        elif action == 'SELL':
+            cursor.execute("SELECT qty, entry_price FROM paper_positions WHERE symbol=?", (symbol,))
+            pos = cursor.fetchone()
+            if not pos or pos[0] < qty:
+                conn.close()
+                return JSONResponse({"status": "error", "message": "Insufficient quantity to sell"})
+                
+            cursor.execute("UPDATE paper_account SET equity = equity + ? WHERE id=1", (cost,))
+            
+            if pos[0] == qty:
+                cursor.execute("DELETE FROM paper_positions WHERE symbol=?", (symbol,))
+            else:
+                cursor.execute("UPDATE paper_positions SET qty = qty - ? WHERE symbol=?", (qty, symbol))
+                
+            pnl = (price - pos[1]) * qty
+            # Log trade
+            import datetime
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cursor.execute("INSERT INTO paper_trades (symbol, strategy_id, direction, entry_time, exit_time, entry_price, exit_price, qty, pnl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (symbol, "MANUAL", "LONG", now_str, now_str, pos[1], price, qty, pnl))
+                           
+        conn.commit()
+        conn.close()
+        
+        return {"status": "success", "message": f"Manual {action} executed"}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 @app.get("/api/equity_history")
 async def get_equity_history():

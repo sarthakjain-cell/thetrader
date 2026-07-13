@@ -45,6 +45,24 @@ module.exports = {
       autorestart: false,
       watch: false,
       max_memory_restart: '300M'
+    },
+    {
+      name: "daily-reporter",
+      script: "./venv/bin/python",
+      args: "daily_reporter.py",
+      interpreter: "none",
+      cron_restart: "0 11 * * 1-5", // 4:30 PM IST Mon-Fri
+      autorestart: false,
+      watch: false
+    },
+    {
+      name: "nightly-factory",
+      script: "./venv/bin/python",
+      args: "nightly_factory.py",
+      interpreter: "none",
+      cron_restart: "30 11 * * 1-5", // 5:00 PM IST Mon-Fri
+      autorestart: false,
+      watch: false
     }
   ]
 };

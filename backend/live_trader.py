@@ -187,9 +187,9 @@ class MultiStrategyEngine:
                         
                         cursor.execute("DELETE FROM paper_positions WHERE id=?", (int(p['id']),))
                         cursor.execute("""
-                            INSERT INTO paper_trades (symbol, strategy_id, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (sym, strat_id, p['entry_time'], now.strftime('%Y-%m-%d %H:%M:%S'), p['entry_price'], exit_price, int(p['qty']), pnl, res['reason'], ""))
+                            INSERT INTO paper_trades (symbol, strategy_id, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (sym, strat_id, p['entry_time'], now.strftime('%Y-%m-%d %H:%M:%S'), p['entry_price'], exit_price, int(p['qty']), pnl, res['reason']))
                         log.info(f"[{strat_id}] CLOSED {sym}: {res['reason']} | PnL: {pnl:.2f}")
                         # Reduce count immediately to free slot
                         open_positions_count -= 1 

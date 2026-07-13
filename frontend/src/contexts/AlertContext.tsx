@@ -33,27 +33,6 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const playSound = (type: string) => {
-    if (typeof window !== 'undefined' && localStorage.getItem('algo_mute') === 'true') return;
-    
-    try {
-      // In a real app, load actual audio files. For now, synthetic beep.
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = type === 'critical' ? 'sawtooth' : 'sine';
-      osc.frequency.setValueAtTime(type === 'critical' ? 400 : 800, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.5);
-    } catch (e) {
-      console.warn("Audio context failed", e);
-    }
-  };
-
   const addAlert = (alert: Omit<Alert, 'timestamp'>) => {
     const newAlert = { ...alert, timestamp: Date.now() };
     
@@ -79,8 +58,7 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      // Trigger Sound
-      playSound(alert.type);
+      // Audio playback permanently disabled by user request.
 
       return [newAlert, ...prev].slice(0, 50); // Keep last 50
     });

@@ -2,20 +2,21 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  padding-bottom: 32px;
 }
 
 .header {
-  padding: 16px 16px 8px 16px;
+  padding: 24px 20px 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: #ffffff;
+  letter-spacing: -0.5px;
 }
 
 .totalPnl {
@@ -26,26 +27,203 @@
 
 .pnlLabel {
   font-size: 0.75rem;
-  color: #8b949e;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .pnlValue {
-  font-size: 1.1rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: 'Inter', monospace;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.pnlValue.positive {
+  background-image: linear-gradient(135deg, #00FF87 0%, #60EFFF 100%);
+  text-shadow: 0 0 20px rgba(0, 255, 135, 0.4);
+}
+
+.pnlValue.negative {
+  background-image: linear-gradient(135deg, #FF3366 0%, #FF9933 100%);
+  text-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
+}
+
+/* Equity Chart */
+.chartContainer {
+  height: 200px;
+  width: 100%;
+  margin-bottom: 24px;
+  position: relative;
+  padding: 0 16px;
+}
+
+.emptyChart {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8E8EA0;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+/* Risk Metrics Row - Glassmorphism */
+.riskMetricsRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  padding: 0 16px;
+}
+
+.riskCard {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.riskCard:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.riskLabel {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.riskValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Section Titles */
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0 20px;
+  margin-bottom: 16px;
+  letter-spacing: -0.2px;
+}
+
+/* Strategy Leaderboard */
+.strategyList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+  margin-bottom: 32px;
+}
+
+.strategyCard {
+  background: rgba(20, 20, 25, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.strategyCard:hover {
+  border-color: rgba(91, 69, 255, 0.3);
+  box-shadow: 0 0 20px rgba(91, 69, 255, 0.1);
+}
+
+.stratHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.stratName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.activeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00c897;
+  box-shadow: 0 0 8px #00c897;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 200, 151, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(0, 200, 151, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 200, 151, 0); }
+}
+
+.stratPnl {
   font-weight: 700;
   font-family: 'Inter', monospace;
+  font-size: 1.05rem;
 }
 
-.positive {
-  color: #00c897;
+.stratPnl.positive { color: #00FF87; }
+.stratPnl.negative { color: #FF3366; }
+
+.stratStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 12px;
 }
 
-.negative {
-  color: #e63946;
+.statBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
+.statVal {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.statLabel {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+}
+
+/* Positions List */
 .listContainer {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  padding: 0 16px;
 }
 
 .row {
@@ -53,69 +231,105 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .leftCol {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .symbol {
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: #ffffff;
 }
 
 .qtyInfo {
-  font-size: 0.8rem;
-  color: #8b949e;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stratTag {
+  background: rgba(91, 69, 255, 0.15);
+  color: #a49aff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border: 1px solid rgba(91, 69, 255, 0.3);
 }
 
 .rightCol {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 6px;
 }
 
 .ltp {
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: #ffffff;
+  font-family: 'Inter', monospace;
 }
 
 .change {
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
+.change.positive {
+  color: #00FF87;
+  background: rgba(0, 255, 135, 0.1);
+}
+.change.negative {
+  color: #FF3366;
+  background: rgba(255, 51, 102, 0.1);
+}
+
+/* Empty States */
 .emptyState {
-  padding: 32px 16px;
+  padding: 48px 16px;
   text-align: center;
   color: #8b949e;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px dashed rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
 }
 
 .boxIcon {
   font-size: 3rem;
-  opacity: 0.5;
+  opacity: 0.4;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
 }
 
 .emptyTitle {
   font-size: 1.1rem;
   font-weight: 600;
   color: #ffffff;
+  letter-spacing: -0.3px;
 }
 
 .emptyDesc {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   max-width: 250px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
 }

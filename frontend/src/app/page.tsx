@@ -13,6 +13,8 @@ import { KillBanner } from '../components/KillBanner';
 import { BottomNav } from '../components/BottomNav';
 import { Scanner } from '../components/Scanner';
 import { useAlerts } from '../contexts/AlertContext';
+import { AlertLog } from '../components/AlertLog';
+import { StockInsightsModal } from '../components/StockInsightsModal';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -21,6 +23,8 @@ export default function Home() {
   
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'scanner' | 'charts' | 'portfolio' | 'news'>('home');
+  const [selectedChartSymbol, setSelectedChartSymbol] = useState<string | null>(null);
+  const [selectedInsightSymbol, setSelectedInsightSymbol] = useState<string | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -42,7 +46,7 @@ export default function Home() {
     };
   }) || [];
 
-  const activeSymbol = state.positions.length > 0 ? state.positions[0].symbol : 'RELIANCE.NS';
+  const activeSymbol = selectedChartSymbol || (state.positions.length > 0 ? state.positions[0].symbol : 'RELIANCE.NS');
 
   return (
     <>
@@ -55,8 +59,11 @@ export default function Home() {
           <div className={styles.commandRow}>
             <div className={styles.logo}>AlgoTrade AI</div>
             
-            <div className={styles.searchContainer}>
-              <CommandPalette />
+            <div className={styles.searchContainer} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ flex: 1 }}>
+                <CommandPalette />
+              </div>
+              <AlertLog />
             </div>
 
             <div className={styles.statusBox}>
@@ -76,9 +83,9 @@ export default function Home() {
               {activeTab === 'home' && (
                 <div className={styles.mobileTab}>
                   <div style={{ paddingTop: '16px' }} />
-                  <CategoryScroll title="Top AI Buys" signals={marketSignals.slice(0, 3)} />
-                  <CategoryScroll title="Momentum Leaders" signals={marketSignals.slice(3, 6)} />
-                  <CategoryScroll title="Value Picks" signals={marketSignals.slice(0, 2)} />
+                  <CategoryScroll title="Top AI Buys" signals={marketSignals.slice(0, 3)} onStockClick={setSelectedInsightSymbol} />
+                  <CategoryScroll title="Momentum Leaders" signals={marketSignals.slice(3, 6)} onStockClick={setSelectedInsightSymbol} />
+                  <CategoryScroll title="Value Picks" signals={marketSignals.slice(0, 2)} onStockClick={setSelectedInsightSymbol} />
                   <div style={{ paddingBottom: '32px' }} />
                 </div>
               )}
@@ -89,7 +96,12 @@ export default function Home() {
               )}
               {activeTab === 'portfolio' && (
                 <div className={styles.mobileTab}>
-                  <AIPortfolio positions={state.positions} account={state.account} strategies={state.strategies} />
+                  <AIPortfolio 
+                    positions={state.positions} 
+                    account={state.account} 
+                    strategies={state.strategies} 
+                    onPositionClick={(sym) => { setSelectedChartSymbol(sym); setActiveTab('charts'); }}
+                  />
                 </div>
               )}
               {activeTab === 'charts' && (
@@ -109,8 +121,13 @@ export default function Home() {
             <PanelGroup direction="horizontal">
               <Panel defaultSize={25} minSize={20} maxSize={40} className={styles.panel}>
                 <div className={styles.panelContent}>
-                  <CategoryScroll title="Top AI Buys" signals={marketSignals} />
-                  <AIPortfolio positions={state.positions} account={state.account} />
+                  <CategoryScroll title="Top AI Buys" signals={marketSignals} onStockClick={setSelectedInsightSymbol} />
+                  <AIPortfolio 
+                    positions={state.positions} 
+                    account={state.account} 
+                    strategies={state.strategies}
+                    onPositionClick={(sym) => setSelectedChartSymbol(sym)}
+                  />
                 </div>
               </Panel>
               <PanelResizeHandle className={styles.resizeHandle} />
@@ -131,6 +148,15 @@ export default function Home() {
           )}
         </main>
       </div>
+
+      {selectedInsightSymbol && (
+        <StockInsightsModal 
+          symbol={selectedInsightSymbol} 
+          currentPrice={marketSignals.find(s => s.symbol === selectedInsightSymbol)?.last_price || 0}
+          trend={marketSignals.find(s => s.symbol === selectedInsightSymbol)?.trend || 'Neutral'}
+          onClose={() => setSelectedInsightSymbol(null)} 
+        />
+      )}
 
       {isMobile && (
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
