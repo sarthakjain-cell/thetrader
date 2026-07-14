@@ -249,11 +249,26 @@ async def get_news(category: str = "All", limit: int = 20, offset: int = 0):
         
     try:
         df = pd.read_sql(query, conn)
+        
+        # Ensure new Epic 15 columns exist even if old DB format
+        if 'affected_sector' not in df.columns:
+            df['affected_sector'] = "General Market"
+        if 'action_signal' not in df.columns:
+            df['action_signal'] = "⚪ HOLD"
+        if 'confidence_score' not in df.columns:
+            df['confidence_score'] = 0.5
+            
         # Fix NaN values that cause JSON serialization crash
         import numpy as np
         df = df.replace({np.nan: None})
+        
+        # Replace None with default UI values for new rows that aren't enriched yet
+        df['affected_sector'] = df['affected_sector'].fillna("General Market")
+        df['action_signal'] = df['action_signal'].fillna("⚪ HOLD")
+        
         news = df.to_dict(orient="records")
-    except Exception:
+    except Exception as e:
+        print(f"Error fetching news: {e}")
         news = []
     finally:
         conn.close()

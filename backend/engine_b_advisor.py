@@ -274,6 +274,74 @@ def rank_daily_tips(current_time=None):
     conn.commit()
     conn.close()
 
+def enrich_scraped_news():
+    log.info("Enriching newly scraped news with AI contextual signals...")
+    conn = _get_db()
+    cursor = conn.cursor()
+    
+    # Define mapping to sectors
+    SECTOR_MAPPING = {
+        "Pharma Sector": ["pharma", "drug", "fda", "sun pharma", "cipla", "dr reddy", "lupin"],
+        "Banking & Finance": ["bank", "rbi", "lender", "nbfc", "finance", "loan", "interest rate", "repo rate", "hdfc", "icici", "kotak", "axis", "sbi"],
+        "IT & Tech": ["tech", "software", "it sector", "nasdaq", "silicon", "ai", "tcs", "infosys", "wipro", "hcltech"],
+        "Auto Sector": ["auto", "vehicle", "ev", "maruti", "tata motors", "mahindra"],
+        "Metals & Mining": ["metal", "steel", "mining", "tata steel", "hindalco", "jsw"],
+        "FMCG": ["fmcg", "consumer goods", "retail", "inflation", "itc", "hul", "hindustan unilever"],
+        "Energy/Oil": ["reliance", "ril", "oil", "gas", "ongc"]
+    }
+    
+    try:
+        # Fetch news that hasn't been enriched yet
+        cursor.execute("SELECT id, headline, content, related_tickers FROM scraped_news WHERE action_signal IS NULL")
+        rows = cursor.fetchall()
+        
+        for row in rows:
+            news_id, headline, content, tickers = row
+            text = f"{headline} {content or ''}".lower()
+            
+            # 1. Determine Sector
+            affected_sector = "General Market"
+            for sector, keywords in SECTOR_MAPPING.items():
+                for kw in keywords:
+                    if kw in text:
+                        affected_sector = sector
+                        break
+                if affected_sector != "General Market":
+                    break
+                    
+            # 2. Determine Action Signal and Confidence using FinBERT
+            result = finbert(headline)[0]
+            label = result['label']
+            score = result['score']
+            
+            if label == 'positive':
+                action_signal = "🟢 BUY"
+                confidence_score = score
+            elif label == 'negative':
+                action_signal = "🔴 SELL"
+                confidence_score = score
+            else:
+                action_signal = "⚪ HOLD"
+                confidence_score = score
+                
+            # If it's a very weak signal, downgrade to hold
+            if action_signal != "⚪ HOLD" and confidence_score < 0.65:
+                action_signal = "⚪ HOLD"
+                
+            cursor.execute('''
+                UPDATE scraped_news 
+                SET affected_sector=?, action_signal=?, confidence_score=? 
+                WHERE id=?
+            ''', (affected_sector, action_signal, confidence_score, news_id))
+            
+        conn.commit()
+        if len(rows) > 0:
+            log.info(f"Successfully enriched {len(rows)} news articles.")
+    except Exception as e:
+        log.error(f"Error enriching scraped news: {e}")
+    finally:
+        conn.close()
+
 class EngineBAdvisor:
     def __init__(self):
         self.last_scrape_hour = -1
@@ -298,6 +366,9 @@ class EngineBAdvisor:
                 self.last_date = current_date
             
             t = now.time()
+            
+            # Continuous fast enrichment loop for new news
+            enrich_scraped_news()
             
             # Pre-market scrape at 08:45
             if t.hour == 8 and t.minute >= 45 and self.last_scrape_hour != 8:
