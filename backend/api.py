@@ -46,6 +46,34 @@ def fetch_dashboard_state(last_ah_id=0):
         mdd = (acc['peak_equity'] - acc['equity']) / acc['peak_equity'] if acc['peak_equity'] > 0 else 0
         account = {"equity": acc['equity'], "peak_equity": acc['peak_equity'], "is_halted": acc['is_halted'], "mdd": mdd}
         
+    alerts = []
+    
+    # --- ENGINE HEALTH MONITOR (RED FLAGS) ---
+    engine_stall = False
+    try:
+        # Check Engine A (Execution)
+        sig_check = pd.read_sql("SELECT MAX(updated_at) as last_up FROM market_signals", conn)
+        if not sig_check.empty and sig_check.iloc[0]['last_up']:
+            last_sig_time = pd.to_datetime(sig_check.iloc[0]['last_up']).tz_localize('Asia/Kolkata')
+            if market_status == "OPEN" and (now - last_sig_time).total_seconds() > 600:
+                alerts.append({"id": "engine_a_stall", "type": "critical", "message": "🚨 ENGINE A (EXECUTION) STALLED! Data is stale.", "timestamp": int(now.timestamp())})
+                engine_stall = True
+
+        # Check Engine B (AI Advisor)
+        news_check = pd.read_sql("SELECT MAX(timestamp) as last_news FROM scraped_news", conn)
+        if not news_check.empty and news_check.iloc[0]['last_news']:
+            last_news_time = pd.to_datetime(news_check.iloc[0]['last_news']).tz_localize('Asia/Kolkata')
+            # If news is older than 2 hours (7200 seconds), flag it
+            if (now - last_news_time).total_seconds() > 7200:
+                alerts.append({"id": "engine_b_stall", "type": "critical", "message": "🚨 ENGINE B (AI) DISCONNECTED! Missing macro data.", "timestamp": int(now.timestamp())})
+                engine_stall = True
+    except Exception as e:
+        print(f"Health monitor error: {e}")
+        
+    if engine_stall:
+        # Force the market status to display STALLED in UI
+        market_status = "STALLED"
+        
     # 2. Positions
     pos_df = pd.read_sql("SELECT * FROM paper_positions", conn)
     if not pos_df.empty:
@@ -98,7 +126,6 @@ def fetch_dashboard_state(last_ah_id=0):
     for sig in market_signals:
         sig['ai_prob'] = forecasts_dict.get(sig['symbol'], None)
         
-    alerts = []
     if account.get('is_halted', False):
         alerts.append({"id": "kill_switch", "type": "critical", "message": "SYSTEM HALTED: Max Drawdown Exceeded", "timestamp": int(pd.Timestamp.now().timestamp())})
         

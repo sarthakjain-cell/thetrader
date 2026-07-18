@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { createChart, IChartApi, ISeriesApi, ColorType } from 'lightweight-charts';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { createChart, IChartApi, ISeriesApi, ColorType, CrosshairMode } from 'lightweight-charts';
 import { Trade } from '../types';
+import styles from './TradingChart.module.css';
 
 interface Props {
   symbol: string;
@@ -20,11 +21,24 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#8b949e', // Upstox secondary text
+        textColor: '#8b949e',
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.03)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.03)' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.02)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.02)' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: {
+          width: 1,
+          color: 'rgba(255, 255, 255, 0.1)',
+          style: 3,
+        },
+        horzLine: {
+          width: 1,
+          color: 'rgba(255, 255, 255, 0.1)',
+          style: 3,
+        },
       },
       timeScale: {
         timeVisible: true,
@@ -34,13 +48,20 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
       },
-      // Give initial height, but we will auto-resize
+      watermark: {
+        visible: true,
+        fontSize: 120,
+        horzAlign: 'center',
+        vertAlign: 'center',
+        color: 'rgba(255, 255, 255, 0.03)',
+        text: symbol || 'ALGO-AI',
+      },
       height: chartContainerRef.current.clientHeight || 400,
     });
     
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#00c897', downColor: '#e63946', borderVisible: false, // Upstox colors
-      wickUpColor: '#00c897', wickDownColor: '#e63946',
+      upColor: '#00f5a0', downColor: '#ff0076', borderVisible: false,
+      wickUpColor: '#00f5a0', wickDownColor: '#ff0076',
     });
     
     chartRef.current = chart;
@@ -99,9 +120,9 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
           markers.push({ 
             time: findClosestTime(entryTimeUnix), 
             position: 'belowBar', 
-            color: '#00c897', 
+            color: '#00f5a0', 
             shape: 'arrowUp', 
-            text: `Buy @ ${t.entry_price}`,
+            text: `EXEC: BUY @ ${t.entry_price}`,
             id: `trade_${t.id}`
           });
           
@@ -110,9 +131,9 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
             markers.push({ 
               time: findClosestTime(exitTimeUnix), 
               position: 'aboveBar', 
-              color: '#e63946', 
+              color: '#ff0076', 
               shape: 'arrowDown', 
-              text: `Sell @ ${t.exit_price}`,
+              text: `EXEC: SELL @ ${t.exit_price}`,
               id: `trade_${t.id}`
             });
           }
@@ -134,25 +155,90 @@ export const TradingChart: React.FC<Props> = ({ symbol, trades, onMarkerClick })
     return () => clearInterval(interval);
   }, [symbol, JSON.stringify(trades)]);
 
+  // Get active trades for this symbol
+  const activeSymbolTrades = useMemo(() => {
+    return trades.filter(t => t.symbol === symbol).sort((a, b) => new Date(b.entry_time).getTime() - new Date(a.entry_time).getTime());
+  }, [trades, symbol]);
+
+  const latestTrade = activeSymbolTrades[0];
+  const isHolding = latestTrade && !latestTrade.exit_time;
+
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#12151c' }}>
-      <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: 'rgba(255, 255, 255, 0.01)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#ffffff', margin: 0, letterSpacing: '-0.3px' }}>
-            {symbol ? `${symbol} Execution Chart` : 'Live AI Execution Charts'}
+    <div className={styles.chartContainer}>
+      <div className={styles.chartHeader}>
+        <div className={styles.titleGroup}>
+          <h3 className={styles.title}>
+            {symbol ? `${symbol.replace('.NS', '')}` : 'STANDBY MODE'}
           </h3>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.4' }}>
-            Visualizes the AI's exact entry and exit signals directly on the live price action. <br/>
-            Select a position from your Portfolio to view its historical execution logic.
-          </span>
+          <div className={styles.liveBadge}>
+            <div className={styles.pulseDot} />
+            LIVE EXECUTION
+          </div>
         </div>
-        {loading && <span style={{fontSize: '0.8rem', color: '#8b949e', marginTop: '4px'}}>Syncing data...</span>}
+        {loading && <span style={{fontSize: '0.75rem', color: '#8b949e', letterSpacing: '1px'}}>SYNCING TELEMETRY...</span>}
       </div>
+
       {symbol ? (
-        <div ref={chartContainerRef} style={{ flex: 1, width: '100%' }} />
+        <div className={styles.chartArea}>
+          <div ref={chartContainerRef} className={styles.lwChart} />
+          
+          {/* Glass HUD Overlay */}
+          <div className={styles.hudOverlay}>
+            <div className={styles.glassCard}>
+              <div className={styles.hudTitle}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                AI TELEMETRY
+              </div>
+              <div className={styles.hudGrid}>
+                <div className={styles.hudItem}>
+                  <span className={styles.hudLabel}>Strategy Lock</span>
+                  <span className={styles.hudValue}>{latestTrade?.strategy_id || 'SCANNING'}</span>
+                </div>
+                <div className={styles.hudItem}>
+                  <span className={styles.hudLabel}>Status</span>
+                  <span className={`${styles.hudValue} ${isHolding ? styles.bullish : ''}`}>{isHolding ? 'ACTIVE HOLD' : 'OBSERVING'}</span>
+                </div>
+                {isHolding && (
+                  <>
+                    <div className={styles.hudItem}>
+                      <span className={styles.hudLabel}>Entry</span>
+                      <span className={styles.hudValue}>₹{latestTrade.entry_price.toFixed(2)}</span>
+                    </div>
+                    <div className={styles.hudItem}>
+                      <span className={styles.hudLabel}>Qty</span>
+                      <span className={styles.hudValue}>{latestTrade.qty}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Trade Log Overlay */}
+          {activeSymbolTrades.length > 0 && (
+            <div className={styles.executionPanel}>
+              <div className={styles.tradeLog}>
+                {activeSymbolTrades.slice(0, 2).map(t => (
+                  <div key={t.id} className={`${styles.glassCard} ${styles.tradeEntry} ${t.exit_time ? styles.sell : ''}`}>
+                    <div className={styles.tradeHeader}>
+                      <span className={styles.tradeType}>{t.exit_time ? 'CLOSED POSITION' : 'OPEN POSITION'}</span>
+                      <span className={styles.tradePrice}>
+                        {t.exit_time ? `PnL: ₹${(t.pnl || 0).toFixed(2)}` : `Buy: ₹${t.entry_price}`}
+                      </span>
+                    </div>
+                    <div className={styles.tradeReason}>
+                      <strong>{t.strategy_id}</strong>: {t.reason}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
-        <div style={{ padding: '24px', textAlign: 'center', color: '#8b949e' }}>
-          Please select an active position to view chart
+        <div className={styles.emptyState}>
+          <div className={styles.radarSpinner} />
+          <span>AWAITING TARGET SELECTION</span>
         </div>
       )}
     </div>

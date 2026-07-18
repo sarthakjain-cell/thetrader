@@ -48,4 +48,10 @@ def compute_features(df: pd.DataFrame) -> pd.DataFrame:
     df['ORB_High'] = orb_high
     df['ORB_Low'] = orb_low
     
+    # 7. Volume SMA
+    df['Volume_SMA_20'] = df['Volume'].rolling(window=20).mean()
+    
+    # 8. Previous Close (Simulated for gap down)
+    df['Prev_Close'] = df['Close'].shift(1)
+    
     return df

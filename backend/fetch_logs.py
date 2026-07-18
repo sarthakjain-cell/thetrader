@@ -11,7 +11,7 @@ try:
     print(f"Connecting to {remote_host}...")
     ssh.connect(remote_host, username=remote_user, password=password)
     
-    cmd = "echo '--- ENGINE A ERROR LOG ---' && cat ~/.pm2/logs/engine-a-technical-error.log | tail -n 20 && echo '--- ENGINE A OUT LOG ---' && cat ~/.pm2/logs/engine-a-technical-out.log | tail -n 20 && echo '--- DB CHECK ---' && sqlite3 /root/backend/trading_system.db 'SELECT count(*) FROM paper_trades;'"
+    cmd = "pm2 status && echo '--- POSITIONS ---' && sqlite3 /root/backend/trading_system.db 'SELECT * FROM paper_positions;' && echo '--- TRADES ---' && sqlite3 /root/backend/trading_system.db 'SELECT * FROM paper_trades ORDER BY id DESC LIMIT 5;'"
     stdin, stdout, stderr = ssh.exec_command(cmd)
     
     out = stdout.read().decode('utf-8', errors='ignore')

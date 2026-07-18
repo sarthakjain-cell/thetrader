@@ -7,8 +7,7 @@ uvicorn
 pydantic-settings
 requests
 feedparser
-transformers
-torch
+google-generativeai
 beautifulsoup4
 requests
 python-multipart

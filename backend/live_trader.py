@@ -9,13 +9,30 @@ from data_provider import YFinanceProvider
 from feature_engine import compute_features
 
 from strategy_001_orb import Strategy001ORB
+from strategy_002_vwap import Strategy002VWAP
+from strategy_003_momentum import Strategy003Momentum
 from strategy_004_meanreversion import Strategy004MeanReversion
+from strategy_005_rangefade import Strategy005RangeFade
+from strategy_006_volclimax import Strategy006VolumeClimax
+from strategy_008_gapfill import Strategy008GapFill
 
 MARKET_OPEN = dtime(9, 15)
 MARKET_CLOSE = dtime(15, 30)
 SLEEP_INTERVAL_SECONDS = 60 # 1-minute tick
 DB_PATH = "trading_system.db"
-SYMBOLS = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", "SBIN.NS"]
+SYMBOLS = [
+    "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", "SBIN.NS",
+    "BHARTIARTL.NS", "ITC.NS", "HINDUNILVR.NS", "LT.NS", "BAJFINANCE.NS",
+    "AXISBANK.NS", "KOTAKBANK.NS", "ASIANPAINT.NS", "MARUTI.NS", "SUNPHARMA.NS",
+    "TITAN.NS", "HCLTECH.NS", "TATASTEEL.NS", "NTPC.NS", "TATAMOTORS.NS",
+    "WIPRO.NS", "ONGC.NS", "POWERGRID.NS", "ULTRACEMCO.NS", "TECHM.NS",
+    "M&M.NS", "BAJAJFINSV.NS", "NESTLEIND.NS", "JSWSTEEL.NS", "GRASIM.NS",
+    "INDUSINDBK.NS", "ADANIPORTS.NS", "HINDALCO.NS", "DRREDDY.NS",
+    "CIPLA.NS", "SBILIFE.NS", "EICHERMOT.NS", "DIVISLAB.NS", "COALINDIA.NS",
+    "BRITANNIA.NS", "TATACHEM.NS", "APOLLOHOSP.NS", "BPCL.NS",
+    "HEROMOTOCO.NS", "TATACONSUM.NS", "UPL.NS", "BAJAJ-AUTO.NS",
+    "SHREECEM.NS", "ADANIENT.NS"
+]
 TOTAL_PAPER_CAPITAL = 1_000_000.0 # 10 Lakhs INR
 
 def get_ist_now():
@@ -46,8 +63,8 @@ class MetaAllocator:
                 deduped[sym] = intent
                 
         approved_trades = []
-        # Max open positions across the portfolio (e.g. 5)
-        max_positions = 5
+        # Max open positions across the portfolio (increased to 10 for Nifty 50 scale)
+        max_positions = 10
         available_slots = max_positions - open_positions_count
         
         if available_slots <= 0:
@@ -78,7 +95,12 @@ class MultiStrategyEngine:
         # Load Hardcoded strategies
         self.strategies = [
             Strategy001ORB(),
-            Strategy004MeanReversion()
+            Strategy002VWAP(),
+            Strategy003Momentum(),
+            Strategy004MeanReversion(),
+            Strategy005RangeFade(),
+            Strategy006VolumeClimax(),
+            Strategy008GapFill()
         ]
         
         # Load Generated Strategies
@@ -107,11 +129,11 @@ class MultiStrategyEngine:
         return sqlite3.connect(DB_PATH)
 
     def fetch_market_data(self):
+        # Fetch all symbols in one batched request
+        raw_data_dict = self.provider.get_today_data(SYMBOLS)
         data = {}
-        for sym in SYMBOLS:
-            df = self.provider.get_today_data(sym)
+        for sym, df in raw_data_dict.items():
             if not df.empty:
-                # Pre-compute features immediately upon fetching
                 try:
                     df = compute_features(df)
                     data[sym] = df

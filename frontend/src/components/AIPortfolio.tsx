@@ -31,6 +31,7 @@ interface Position {
   current_price: number;
   unrealized_pnl: number;
   strategy_id?: string;
+  trade_type?: 'INTRADAY' | 'DELIVERY';
 }
 
 interface AIPortfolioProps {
@@ -42,7 +43,10 @@ interface AIPortfolioProps {
 
 export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, account, strategies = [], onPositionClick }) => {
   const [equityData, setEquityData] = useState<{ time: string; equity: number }[]>([]);
-  const totalPnl = positions.reduce((sum, p) => sum + (p.unrealized_pnl || 0), 0);
+  const [viewType, setViewType] = useState<'INTRADAY' | 'DELIVERY'>('INTRADAY');
+  
+  const filteredPositions = positions.filter(p => (p.trade_type || 'INTRADAY') === viewType);
+  const totalPnl = filteredPositions.reduce((sum, p) => sum + (p.unrealized_pnl || 0), 0);
   const isPositive = totalPnl >= 0;
 
   useEffect(() => {
@@ -157,7 +161,7 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, account, st
       <div className={styles.header}>
         <div className={styles.title}>Multi-Strategy AI Matrix</div>
         <div className={styles.totalPnl}>
-          <span className={styles.pnlLabel}>Live Float Returns</span>
+          <span className={styles.pnlLabel}>{viewType === 'INTRADAY' ? 'Intraday Live PnL' : 'Holdings Live PnL'}</span>
           <span className={`${styles.pnlValue} ${isPositive ? styles.positive : styles.negative}`}>
             {isPositive ? '+' : ''}₹{totalPnl.toFixed(2)}
           </span>
@@ -242,16 +246,34 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, account, st
         )}
       </motion.div>
 
-      <div className={styles.sectionTitle}>Live Paper Positions</div>
+      <div className={styles.sectionTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        Live Paper Positions
+      </div>
+      
+      <div className={styles.toggleContainer}>
+        <button 
+          className={`${styles.toggleBtn} ${viewType === 'INTRADAY' ? styles.active : ''}`}
+          onClick={() => setViewType('INTRADAY')}
+        >
+          INTRADAY
+        </button>
+        <button 
+          className={`${styles.toggleBtn} ${viewType === 'DELIVERY' ? styles.active : ''}`}
+          onClick={() => setViewType('DELIVERY')}
+        >
+          HOLDINGS
+        </button>
+      </div>
+
       <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.listContainer}>
-        {positions.length === 0 ? (
+        {filteredPositions.length === 0 ? (
           <motion.div variants={itemVariants} className={styles.emptyState}>
             <div className={styles.boxIcon}>🔭</div>
             <div className={styles.emptyTitle}>Scanning Market...</div>
             <div className={styles.emptyDesc}>The AI is waiting for the perfect entry criteria across all active strategies.</div>
           </motion.div>
         ) : (
-          positions.map(p => {
+          filteredPositions.map(p => {
             const currentPrice = p.current_price || p.entry_price;
             const uPnl = p.unrealized_pnl || 0;
             const pnlPositive = uPnl >= 0;

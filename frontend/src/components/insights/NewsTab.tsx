@@ -23,7 +23,8 @@ export const NewsTab: React.FC<NewsTabProps> = ({ symbol }) => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/news?category=${cleanSymbol}`);
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://206.189.129.232:8000';
+        const res = await fetch(`${baseUrl}/api/news?category=${cleanSymbol}`);
         const data = await res.json();
         setNews(data);
       } catch (err) {
@@ -100,11 +101,11 @@ export const NewsTab: React.FC<NewsTabProps> = ({ symbol }) => {
                   fontSize: '0.75rem', 
                   color: getSignalColor(item.action_signal), 
                   background: getSignalBg(item.action_signal), 
-                  border: \`1px solid \${getSignalColor(item.action_signal)}40\`,
+                  border: `1px solid ${getSignalColor(item.action_signal)}40`,
                   padding: '2px 8px', 
                   borderRadius: '12px',
                   fontWeight: 600,
-                  boxShadow: item.action_signal?.includes('BUY') || item.action_signal?.includes('SELL') ? \`0 0 8px \${getSignalBg(item.action_signal)}\` : 'none'
+                  boxShadow: item.action_signal?.includes('BUY') || item.action_signal?.includes('SELL') ? `0 0 8px ${getSignalBg(item.action_signal)}` : 'none'
                 }}>
                   AI Tip: {item.action_signal || "⚪ HOLD"}
                 </span>

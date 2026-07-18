@@ -333,3 +333,31 @@
   color: rgba(255, 255, 255, 0.5);
   line-height: 1.5;
 }
+
+/* Toggle Switch */
+.toggleContainer {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 4px;
+  margin: 0 16px 16px 16px;
+}
+
+.toggleBtn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggleBtn.active {
+  background: rgba(91, 69, 255, 0.3);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(91, 69, 255, 0.2);
+}

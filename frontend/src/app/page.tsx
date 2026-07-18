@@ -15,6 +15,7 @@ import { Scanner } from '../components/Scanner';
 import { useAlerts } from '../contexts/AlertContext';
 import { AlertLog } from '../components/AlertLog';
 import { StockInsightsModal } from '../components/StockInsightsModal';
+import { ProfileDropdown } from '../components/ProfileDropdown';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -61,9 +62,10 @@ export default function Home() {
             
             <div className={styles.searchContainer} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ flex: 1 }}>
-                <CommandPalette />
+                <CommandPalette onSearch={(sym) => setSelectedInsightSymbol(sym)} />
               </div>
               <AlertLog />
+              <ProfileDropdown />
             </div>
 
             <div className={styles.statusBox}>

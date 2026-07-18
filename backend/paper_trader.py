@@ -57,6 +57,7 @@ class PaperTrader:
         # Load AI Forecasts and Threshold
         conn = self._get_db()
         self.ai_forecasts = {}
+        self.ai_rationales = {}
         self.ai_threshold = 0.55
         self.ai_active = True
         self.trend_scores = {}
@@ -73,10 +74,11 @@ class PaperTrader:
         if not config_regime.empty:
             self.market_regime_multiplier = float(config_regime.iloc[0]['value'])
             
-        forecasts = pd.read_sql(f"SELECT * FROM daily_ai_forecasts WHERE date='{current_date}'", conn)
+        forecasts = pd.read_sql(f"SELECT * FROM research_tips WHERE date='{current_date}'", conn)
         if not forecasts.empty:
             for _, row in forecasts.iterrows():
-                self.ai_forecasts[row['symbol']] = row['probability']
+                self.ai_forecasts[row['symbol']] = row['score']
+                self.ai_rationales[row['symbol']] = row['rationale']
                 
             config = pd.read_sql("SELECT * FROM model_config WHERE key='ai_conviction_threshold'", conn)
             if not config.empty:
@@ -156,6 +158,10 @@ class PaperTrader:
         positions = pd.read_sql("SELECT * FROM paper_positions", conn)
         
         for _, pos in positions.iterrows():
+            # If EOD liquidation, skip DELIVERY trades
+            if reason == "eod_stop" and pos.get('trade_type', 'INTRADAY') == 'DELIVERY':
+                continue
+                
             sym = pos['symbol']
             # Fetch current price
             df = self.provider.get_today_data(sym)
@@ -173,16 +179,16 @@ class PaperTrader:
             
             cursor.execute("DELETE FROM paper_positions WHERE id=?", (pos['id'],))
             cursor.execute("""
-                INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (sym, pos['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), entry_price, exit_price, qty, pnl, reason, "EOD Liquidation"))
+                INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes, trade_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (sym, pos['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), entry_price, exit_price, qty, pnl, reason, "EOD Liquidation", pos.get('trade_type', 'INTRADAY')))
             
             # Update account
             cursor.execute("UPDATE paper_account SET equity = equity + ? WHERE id=1", (trade_value - brokerage,))
             
         conn.commit()
         conn.close()
-        log.info(f"Liquidated all positions. Reason: {reason}")
+        log.info(f"Liquidated positions. Reason: {reason}")
         
     def _compute_dynamic_slippage(self, range_pct, avg_range_pct):
         baseline = 0.0005
@@ -237,9 +243,9 @@ class PaperTrader:
                 # Check AI Gate
                 if self.ai_active and sym in self.ai_forecasts:
                     prob = self.ai_forecasts[sym]
-                    if prob <= self.ai_threshold:
+                    if prob < 0:
                         signal = "VETO"
-                        reason = f"AI VETO: Conviction ({prob:.2f}) below threshold ({self.ai_threshold:.2f})."
+                        reason = f"AI VETO: Gemini Sentiment is negative ({prob:.2f}). Rationale: {self.ai_rationales.get(sym, '')}"
                         return {
                             'symbol': sym, 'last_price': price, 'regime': regime, 'signal': signal,
                             'rsi': rsi, 'volume_spike': vol_spike, 'adx': adx, 'sentiment': sentiment,
@@ -368,6 +374,17 @@ class PaperTrader:
                 exit_price = None
                 reason = None
                 
+                # --- Trailing Stop-Loss Logic (1R Step) ---
+                risk_dist = p['entry_price'] - p['stop_loss']
+                if risk_dist > 0: # Long position
+                    # If price has moved 1R in our favor, move stop to Breakeven
+                    if high >= (p['entry_price'] + risk_dist) and p['stop_loss'] < p['entry_price']:
+                        new_stop = p['entry_price']
+                        cursor.execute("UPDATE paper_positions SET stop_loss=? WHERE id=?", (new_stop, int(p['id'])))
+                        conn.commit()
+                        log.info(f"Trailing Stop Triggered for {sym}: Moved Stop to Breakeven ({new_stop:.2f})")
+                        p['stop_loss'] = new_stop # Update local reference for the tick evaluate
+                
                 if low <= p['stop_loss']:
                     exit_price = min(latest_bar['Open'], p['stop_loss'])
                     reason = "stop"
@@ -382,9 +399,9 @@ class PaperTrader:
                     
                     cursor.execute("DELETE FROM paper_positions WHERE id=?", (int(p['id']),))
                     cursor.execute("""
-                        INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (sym, p['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), p['entry_price'], exit_price, int(p['qty']), pnl, reason, "Target/Stop Hit"))
+                        INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes, trade_type)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (sym, p['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), p['entry_price'], exit_price, int(p['qty']), pnl, reason, "Target/Stop Hit", p.get('trade_type', 'INTRADAY')))
                     
                     new_equity = acc['equity'] + trade_value - brokerage
                     new_peak = max(acc['peak_equity'], new_equity)
@@ -407,9 +424,9 @@ class PaperTrader:
             if pos.empty and not halted:
                 if eval_data['signal'] == 'VETO':
                     cursor.execute("""
-                        INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (sym, current_time.strftime('%Y-%m-%d %H:%M:%S'), current_time.strftime('%Y-%m-%d %H:%M:%S'), price, price, 0, 0.0, "macro_veto", eval_data['reason']))
+                        INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes, trade_type)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (sym, current_time.strftime('%Y-%m-%d %H:%M:%S'), current_time.strftime('%Y-%m-%d %H:%M:%S'), price, price, 0, 0.0, "macro_veto", eval_data['reason'], 'INTRADAY'))
                     continue
                     
                 if eval_data['signal'] == 'BUY':
@@ -464,16 +481,19 @@ class PaperTrader:
                                     target = exec_price + (atr * self.best_orb['orb_target'])
                                     
                                     cursor.execute("""
-                                        INSERT INTO paper_positions (symbol, entry_time, entry_price, qty, stop_loss, target)
-                                        VALUES (?, ?, ?, ?, ?, ?)
-                                    """, (sym, current_time.strftime('%Y-%m-%d %H:%M:%S'), exec_price, qty, stop_loss, target))
+                                        INSERT INTO paper_positions (symbol, entry_time, entry_price, qty, stop_loss, target, trade_type)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                                    """, (sym, current_time.strftime('%Y-%m-%d %H:%M:%S'), exec_price, qty, stop_loss, target, 'INTRADAY' if self.regimes.get(sym) == 'ORB' else 'DELIVERY'))
                                     
                                     # Log the reason for transparency
+                                    ai_context = self.ai_rationales.get(sym, "No AI context available")
+                                    full_reason = f"{eval_data['reason']} | AI Context: {ai_context}"
                                     cursor.execute("""
                                         UPDATE paper_trades SET notes=? WHERE symbol=? AND entry_time=?
-                                    """, (eval_data['reason'], sym, current_time.strftime('%Y-%m-%d %H:%M:%S')))
+                                    """, (full_reason, sym, current_time.strftime('%Y-%m-%d %H:%M:%S')))
                                     
-                                    log_str = f"Entered {sym} ORB Breakout | Price: {exec_price:.2f} | Qty: {qty} | Slippage: {slippage_rate*100:.3f}%"
+                                    trade_str_type = 'INTRADAY' if self.regimes.get(sym) == 'ORB' else 'DELIVERY'
+                                    log_str = f"Entered {sym} {self.regimes.get(sym)} Breakout [{trade_str_type}] | Price: {exec_price:.2f} | Qty: {qty} | Slippage: {slippage_rate*100:.3f}%"
                                     if multiplier_used > 1.0:
                                         log_str += f" | (CONVICTION 1.5x)"
                                     log.info(log_str)

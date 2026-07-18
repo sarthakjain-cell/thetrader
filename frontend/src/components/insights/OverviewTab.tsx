@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 interface OverviewTabProps {
   symbol: string;
+  onLoaded?: (fundamentals: any) => void;
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({ symbol }) => {
+export const OverviewTab: React.FC<OverviewTabProps> = ({ symbol, onLoaded }) => {
   const [expanded, setExpanded] = useState(false);
   const [financialPeriod, setFinancialPeriod] = useState<'Quarterly'|'Yearly'>('Quarterly');
   
@@ -23,6 +24,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ symbol }) => {
         if (res.ok) {
           const json = await res.json();
           setData(json);
+          if (onLoaded && json.fundamentals) {
+            onLoaded(json.fundamentals);
+          }
         }
       } catch (e) {
         console.error("Failed to fetch insights", e);

@@ -16,12 +16,22 @@ interface StockInsightsModalProps {
 
 export const StockInsightsModal: React.FC<StockInsightsModalProps> = ({ 
   symbol, 
-  currentPrice, 
+  currentPrice: initialPrice, 
   trend,
   onClose 
 }) => {
   const [activeTab, setActiveTab] = useState<'Overview' | 'Technicals' | 'News' | 'Events'>('Overview');
   const [showOrderPad, setShowOrderPad] = useState<'BUY' | 'SELL' | null>(null);
+  const [fallbackPrice, setFallbackPrice] = useState<number>(0);
+  
+  // Expose a way for OverviewTab to pass up the fetched price
+  const handleFundamentalsLoaded = (fundamentals: any) => {
+    if (initialPrice === 0 && fundamentals.prev_close) {
+      setFallbackPrice(fundamentals.prev_close);
+    }
+  };
+
+  const currentPrice = initialPrice > 0 ? initialPrice : fallbackPrice;
   
   const tabs = ['Overview', 'Technicals', 'News', 'Events'];
 
@@ -99,7 +109,7 @@ export const StockInsightsModal: React.FC<StockInsightsModalProps> = ({
 
         {/* CONTENT AREA */}
         <div style={{ flex: 1, overflowY: 'auto', background: '#0b0e14' }}>
-          {activeTab === 'Overview' && <OverviewTab symbol={symbol} />}
+          {activeTab === 'Overview' && <OverviewTab symbol={symbol} onLoaded={handleFundamentalsLoaded} />}
           {activeTab === 'Technicals' && <TechnicalsTab trend={trend} />}
           {activeTab === 'News' && <NewsTab symbol={symbol} />}
           {activeTab === 'Events' && <EventsTab />}

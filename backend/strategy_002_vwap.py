@@ -6,22 +6,15 @@ class Strategy002VWAP(BaseStrategy):
     def __init__(self):
         super().__init__("S002_VWAP", "VWAP Mean Reversion")
         
-    def evaluate(self, symbol: str, df: pd.DataFrame, context: dict) -> dict:
+    def evaluate(self, symbol: str, current_bar: pd.Series, context: dict) -> dict:
         signal_dict = {"signal": "HOLD", "reason": "", "stop_loss": None, "target": None, "conviction": 0.5}
         
-        if len(df) < 5:
-            signal_dict["reason"] = "Not enough bars to calculate VWAP"
+        if 'VWAP' not in current_bar or pd.isna(current_bar['VWAP']):
+            signal_dict["reason"] = "VWAP not calculated"
             return signal_dict
             
-        # Calculate daily VWAP
-        # Typical price = (H+L+C)/3
-        df_ta = df.copy()
-        typical_price = (df_ta['High'] + df_ta['Low'] + df_ta['Close']) / 3
-        vwap = (typical_price * df_ta['Volume']).cumsum() / df_ta['Volume'].cumsum()
-        
-        latest_bar = df.iloc[-1]
-        price = latest_bar['Close']
-        current_vwap = vwap.iloc[-1]
+        price = current_bar['Close']
+        current_vwap = current_bar['VWAP']
         
         # Simple VWAP Bounce Logic
         # If price drops below VWAP by 0.5% and then closes above it? Or just mean reversion if it dips way below
@@ -38,14 +31,13 @@ class Strategy002VWAP(BaseStrategy):
             
         return signal_dict
 
-    def manage_position(self, symbol: str, position: dict, df: pd.DataFrame) -> dict:
-        latest_bar = df.iloc[-1]
-        low = latest_bar['Low']
-        high = latest_bar['High']
+    def manage_position(self, symbol: str, position: dict, current_bar: pd.Series) -> dict:
+        low = current_bar['Low']
+        high = current_bar['High']
         
         if low <= position['stop_loss']:
-            return {"action": "CLOSE", "reason": "Stop Loss Hit", "exit_price": min(latest_bar['Open'], position['stop_loss'])}
+            return {"action": "CLOSE", "reason": "Stop Loss Hit", "exit_price": min(current_bar['Open'], position['stop_loss'])}
         elif high >= position['target']:
-            return {"action": "CLOSE", "reason": "Target Hit", "exit_price": max(latest_bar['Open'], position['target'])}
+            return {"action": "CLOSE", "reason": "Target Hit", "exit_price": max(current_bar['Open'], position['target'])}
             
         return {"action": "HOLD"}

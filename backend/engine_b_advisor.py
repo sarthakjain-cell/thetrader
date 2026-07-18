@@ -7,12 +7,14 @@ import json
 import pandas as pd
 from datetime import datetime, timedelta, time as dtime
 from zoneinfo import ZoneInfo
-from transformers import pipeline
+import os
+import google.generativeai as genai
 from logger import log
 
 DB_PATH = "trading_system.db"
-# Initialize FinBERT pipeline
-finbert = pipeline("sentiment-analysis", model="ProsusAI/finbert")
+
+# Initialize Gemini Client (Make sure GEMINI_API_KEY is in .env or exported)
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 FEEDS = [
     "https://economictimes.indiatimes.com/markets/rssfeeds/2146842.cms",
@@ -155,12 +157,11 @@ def aggregate_hourly_sentiment(current_time=None):
     current_date = now.strftime('%Y-%m-%d')
     current_hour = now.hour
     
-    # We aggregate all raw_news that occurred in the last hour
-    # For simplicity, we just aggregate all news for today where hour == current_hour
     start_time = now.replace(minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
     end_time = now.strftime('%Y-%m-%d %H:%M:%S')
     
-    df = pd.read_sql(f"SELECT * FROM raw_news WHERE timestamp >= '{start_time}' AND timestamp <= '{end_time}'", conn)
+    # We now fetch enriched news from scraped_news instead of raw_news to use the LLM score
+    df = pd.read_sql(f"SELECT * FROM scraped_news WHERE timestamp >= '{start_time}' AND timestamp <= '{end_time}'", conn)
     
     if df.empty:
         conn.close()
@@ -168,17 +169,21 @@ def aggregate_hourly_sentiment(current_time=None):
         
     scores = []
     for _, row in df.iterrows():
-        result = finbert(row['title'])[0]
-        if result['label'] == 'positive':
-            score = result['score']
-        elif result['label'] == 'negative':
-            score = -result['score']
+        # Convert action_signal to a float score
+        signal = row.get('action_signal', '')
+        conf = float(row.get('confidence_score', 0.0) or 0.0)
+        
+        if "BUY" in signal:
+            score = conf
+        elif "SELL" in signal:
+            score = -conf
         else:
             score = 0.0
             
-        symbols = row['symbols_mentioned'].split(',')
+        symbols = (row.get('related_tickers') or '').split(',')
         for sym in symbols:
-            scores.append({'symbol': sym, 'score': score})
+            if sym.strip() and sym.strip() != "GENERAL_MARKET":
+                scores.append({'symbol': sym.strip(), 'score': score})
             
     if not scores:
         conn.close()
@@ -234,7 +239,7 @@ def rank_daily_tips(current_time=None):
     cursor.execute("DELETE FROM research_tips WHERE date = ?", (current_date,))
     
     # We need the most positive headline rationale
-    raw_df = pd.read_sql(f"SELECT * FROM raw_news WHERE timestamp LIKE '{current_date}%'", conn)
+    raw_df = pd.read_sql(f"SELECT * FROM scraped_news WHERE timestamp LIKE '{current_date}%'", conn)
     
     for _, row in top_3.iterrows():
         sym = row['symbol']
@@ -245,18 +250,21 @@ def rank_daily_tips(current_time=None):
         best_score = -1
         
         for _, raw in raw_df.iterrows():
-            if sym in raw['symbols_mentioned']:
-                result = finbert(raw['title'])[0]
-                if result['label'] == 'positive':
-                    comp = result['score']
-                elif result['label'] == 'negative':
-                    comp = -result['score']
+            tickers = raw.get('related_tickers', '')
+            if sym in tickers:
+                signal = raw.get('action_signal', '')
+                conf = float(raw.get('confidence_score', 0.0) or 0.0)
+                
+                if "BUY" in signal:
+                    comp = conf
+                elif "SELL" in signal:
+                    comp = -conf
                 else:
                     comp = 0.0
                     
                 if comp > best_score:
                     best_score = comp
-                    best_title = raw['title']
+                    best_title = raw['headline']
                     
         rationale = f"{best_title} (Sentiment: {score:+.2f})"
         
@@ -274,59 +282,65 @@ def rank_daily_tips(current_time=None):
     conn.commit()
     conn.close()
 
+def analyze_with_llm(headline, content):
+    if not os.getenv("GEMINI_API_KEY"):
+        return "General Market", "⚪ HOLD", 0.5
+        
+    prompt = f"""
+You are a ruthless, highly experienced Hedge Fund Quantitative Analyst. 
+Your job is to read market news and determine if it represents a highly confident, actionable trading signal.
+
+Headline: {headline}
+Content: {content}
+
+You must output a strictly formatted JSON object with the following fields:
+1. "affected_sector": The sector this news impacts most (e.g., "IT & Tech", "Banking & Finance", "Pharma Sector", "Energy/Oil", "Auto Sector", "FMCG", "Metals & Mining", or "General Market").
+2. "action_signal": Must be EXACTLY one of: "🟢 BUY", "🔴 SELL", or "⚪ HOLD". 
+    - Output BUY or SELL ONLY if the news is a definitive, high-impact catalyst (e.g., major earnings beat, CEO resignation, massive contract won, severe regulatory action).
+    - Output HOLD if the news is general market chatter, analyst opinions, routine updates, or if the impact is ambiguous.
+3. "confidence_score": A float between 0.0 and 1.0 representing your confidence in the action_signal.
+4. "rationale": A concise, 1-2 sentence explanation of your reasoning.
+"""
+    try:
+        model = genai.GenerativeModel('gemini-1.5-pro')
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+                temperature=0.1,
+            )
+        )
+        
+        res_json = json.loads(response.text)
+        
+        sector = res_json.get("affected_sector", "General Market")
+        signal = res_json.get("action_signal", "⚪ HOLD")
+        conf = float(res_json.get("confidence_score", 0.5))
+        
+        # Guardrails
+        if signal not in ["🟢 BUY", "🔴 SELL", "⚪ HOLD"]:
+            signal = "⚪ HOLD"
+            
+        return sector, signal, conf
+    except Exception as e:
+        log.error(f"LLM Analysis failed: {e}")
+        return "General Market", "⚪ HOLD", 0.5
+
 def enrich_scraped_news():
-    log.info("Enriching newly scraped news with AI contextual signals...")
+    log.info("Enriching newly scraped news with Gemini 1.5 Pro signals...")
     conn = _get_db()
     cursor = conn.cursor()
     
-    # Define mapping to sectors
-    SECTOR_MAPPING = {
-        "Pharma Sector": ["pharma", "drug", "fda", "sun pharma", "cipla", "dr reddy", "lupin"],
-        "Banking & Finance": ["bank", "rbi", "lender", "nbfc", "finance", "loan", "interest rate", "repo rate", "hdfc", "icici", "kotak", "axis", "sbi"],
-        "IT & Tech": ["tech", "software", "it sector", "nasdaq", "silicon", "ai", "tcs", "infosys", "wipro", "hcltech"],
-        "Auto Sector": ["auto", "vehicle", "ev", "maruti", "tata motors", "mahindra"],
-        "Metals & Mining": ["metal", "steel", "mining", "tata steel", "hindalco", "jsw"],
-        "FMCG": ["fmcg", "consumer goods", "retail", "inflation", "itc", "hul", "hindustan unilever"],
-        "Energy/Oil": ["reliance", "ril", "oil", "gas", "ongc"]
-    }
-    
     try:
         # Fetch news that hasn't been enriched yet
-        cursor.execute("SELECT id, headline, content, related_tickers FROM scraped_news WHERE action_signal IS NULL")
+        cursor.execute("SELECT id, headline, content FROM scraped_news WHERE action_signal IS NULL")
         rows = cursor.fetchall()
         
         for row in rows:
-            news_id, headline, content, tickers = row
-            text = f"{headline} {content or ''}".lower()
+            news_id, headline, content = row
             
-            # 1. Determine Sector
-            affected_sector = "General Market"
-            for sector, keywords in SECTOR_MAPPING.items():
-                for kw in keywords:
-                    if kw in text:
-                        affected_sector = sector
-                        break
-                if affected_sector != "General Market":
-                    break
-                    
-            # 2. Determine Action Signal and Confidence using FinBERT
-            result = finbert(headline)[0]
-            label = result['label']
-            score = result['score']
-            
-            if label == 'positive':
-                action_signal = "🟢 BUY"
-                confidence_score = score
-            elif label == 'negative':
-                action_signal = "🔴 SELL"
-                confidence_score = score
-            else:
-                action_signal = "⚪ HOLD"
-                confidence_score = score
-                
-            # If it's a very weak signal, downgrade to hold
-            if action_signal != "⚪ HOLD" and confidence_score < 0.65:
-                action_signal = "⚪ HOLD"
+            # Use Gemini 1.5 Pro
+            affected_sector, action_signal, confidence_score = analyze_with_llm(headline, content or "")
                 
             cursor.execute('''
                 UPDATE scraped_news 
@@ -334,9 +348,12 @@ def enrich_scraped_news():
                 WHERE id=?
             ''', (affected_sector, action_signal, confidence_score, news_id))
             
+            # polite delay for API limits
+            time.sleep(0.5)
+            
         conn.commit()
         if len(rows) > 0:
-            log.info(f"Successfully enriched {len(rows)} news articles.")
+            log.info(f"Successfully enriched {len(rows)} news articles via Gemini.")
     except Exception as e:
         log.error(f"Error enriching scraped news: {e}")
     finally:

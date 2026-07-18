@@ -9,6 +9,8 @@ export interface NewsItem {
   related_tickers: string;
   sentiment_label: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
   content: string;
+  affected_sector: string;
+  action_signal: string;
 }
 
 export const NewsHub: React.FC = () => {
@@ -54,9 +56,21 @@ export const NewsHub: React.FC = () => {
     }
   };
 
+  const getSignalColor = (signal: string) => {
+    if (signal?.includes('BUY')) return '#2ea043';
+    if (signal?.includes('SELL')) return '#f85149';
+    return '#8b949e';
+  };
+
+  const getSignalBg = (signal: string) => {
+    if (signal?.includes('BUY')) return 'rgba(46,160,67,0.1)';
+    if (signal?.includes('SELL')) return 'rgba(248,81,73,0.1)';
+    return 'rgba(139,148,158,0.1)';
+  };
+
   return (
     <div className={styles.container}>
-      <div className={styles.header}>Stocks in the News</div>
+      <div className={styles.header}>AI-Enriched Market News</div>
       <div className={styles.newsList}>
         {loading ? (
           <div className={styles.emptyState}>Loading live news...</div>
@@ -64,11 +78,6 @@ export const NewsHub: React.FC = () => {
           <div className={styles.emptyState}>No recent news found.</div>
         ) : (
           news.map(item => {
-            const isPos = item.sentiment_label === 'POSITIVE';
-            const isNeg = item.sentiment_label === 'NEGATIVE';
-            const arrowColor = isPos ? styles.positive : isNeg ? styles.negative : styles.neutral;
-            const arrowIcon = isPos ? '↑' : isNeg ? '↓' : '→';
-
             return (
               <div 
                 key={item.id} 
@@ -79,6 +88,35 @@ export const NewsHub: React.FC = () => {
                   <span className={styles.source}>{item.source || 'AI Scraper'}</span>
                   <span className={styles.time}>{getTimeAgo(item.timestamp)}</span>
                 </div>
+                
+                {/* Sector and AI Badges */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    color: '#a5d6ff', 
+                    background: 'rgba(56,139,253,0.1)', 
+                    border: '1px solid rgba(56,139,253,0.4)',
+                    padding: '2px 8px', 
+                    borderRadius: '12px',
+                    fontWeight: 500
+                  }}>
+                    {item.affected_sector || "General Market"}
+                  </span>
+                  
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    color: getSignalColor(item.action_signal), 
+                    background: getSignalBg(item.action_signal), 
+                    border: `1px solid ${getSignalColor(item.action_signal)}40`,
+                    padding: '2px 8px', 
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    boxShadow: item.action_signal?.includes('BUY') || item.action_signal?.includes('SELL') ? `0 0 8px ${getSignalBg(item.action_signal)}` : 'none'
+                  }}>
+                    AI Tip: {item.action_signal || "⚪ HOLD"}
+                  </span>
+                </div>
+
                 <div className={styles.headline}>{item.headline}</div>
                 
                 {expandedId === item.id && (
@@ -91,16 +129,6 @@ export const NewsHub: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
-                {/* UPSTOX STYLE IMPACT BOX */}
-                {!expandedId || expandedId !== item.id ? (
-                  item.related_tickers && (
-                    <div className={styles.impactBox}>
-                      <span className={styles.impactSymbol}>{item.related_tickers.split('.')[0]}</span>
-                      <span className={`${styles.impactArrow} ${arrowColor}`}>{arrowIcon}</span>
-                    </div>
-                  )
-                ) : null}
               </div>
             );
           })
