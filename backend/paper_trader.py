@@ -5,8 +5,10 @@ import numpy as np
 import ta
 from datetime import datetime, time as dtime
 from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo
 from logger import log
 from data_provider import YFinanceProvider
+from feature_engine import compute_features
 
 DB_PATH = "trading_system.db"
 NIFTY_SYMBOLS = [
@@ -19,7 +21,8 @@ class PaperTrader:
     def __init__(self, data_provider, is_live=True):
         self.provider = data_provider
         self.is_live = is_live
-        self.best_orb = {'orb_bars': 6, 'orb_target': 2.0, 'orb_stop': 1.0}
+        # Updated via Backtester Truths (Epic 24)
+        self.best_orb = {'orb_bars': 6, 'orb_target': 3.0, 'orb_stop': 1.5}
         self.symbols = NIFTY_SYMBOLS
         self.today_date = None
         self.regimes = {} # symbol -> regime
@@ -171,17 +174,21 @@ class PaperTrader:
             qty = pos['qty']
             entry_price = pos['entry_price']
             
-            # Simulated exit slippage/fees
-            exit_price = close_price * (1 - 0.0005) # fixed slippage for market close
+            direction = pos.get('direction', 'LONG')
+            exit_price = close_price * (1 - 0.0005) if direction == 'LONG' else close_price * (1 + 0.0005)
             trade_value = qty * exit_price
             brokerage = min(trade_value * 0.0005, 20.0) + (trade_value * 0.00025)
-            pnl = trade_value - brokerage - (qty * entry_price)
+            
+            if direction == 'LONG':
+                pnl = trade_value - brokerage - (qty * entry_price)
+            else:
+                pnl = (qty * entry_price) - trade_value - brokerage
             
             cursor.execute("DELETE FROM paper_positions WHERE id=?", (pos['id'],))
             cursor.execute("""
-                INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes, trade_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (sym, pos['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), entry_price, exit_price, qty, pnl, reason, "EOD Liquidation", pos.get('trade_type', 'INTRADAY')))
+                INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes, trade_type, direction)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (sym, pos['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), entry_price, exit_price, qty, pnl, reason, "EOD Liquidation", pos.get('trade_type', 'INTRADAY'), direction))
             
             # Update account
             cursor.execute("UPDATE paper_account SET equity = equity + ? WHERE id=1", (trade_value - brokerage,))
@@ -198,20 +205,25 @@ class PaperTrader:
         return baseline + additional
 
     def evaluate_stock(self, sym, df, active_negative_stocks, active_positive_stocks):
-        latest_bar = df.iloc[-1]
+        if len(df) >= 15:
+            df_ta = compute_features(df.tail(30)) # Fast tail slice
+        else:
+            df_ta = compute_features(df)
+            
+        latest_bar = df_ta.iloc[-1]
         price = latest_bar['Close']
         
-        # Calculate some basic TA for the scanner even if not purely used for ORB entry
-        rsi = 50.0
-        adx = 25.0
-        vol_spike = 1.0
+        rsi = latest_bar.get('RSI_14', 50.0)
+        adx = latest_bar.get('ADX_14', 25.0)
+        avg_vol = latest_bar.get('Volume_SMA_20', 1.0)
+        vol_spike = latest_bar['Volume'] / avg_vol if avg_vol > 0 else 1.0
         
-        df_ta = df.copy()
-        if len(df_ta) >= 14:
-            rsi = ta.momentum.RSIIndicator(df_ta['Close'], window=14).rsi().iloc[-1]
-            adx = ta.trend.ADXIndicator(df_ta['High'], df_ta['Low'], df_ta['Close'], window=14).adx().iloc[-1]
-            avg_vol = df_ta['Volume'].rolling(10).mean().iloc[-1]
-            vol_spike = latest_bar['Volume'] / avg_vol if avg_vol > 0 else 1.0
+        is_hammer = latest_bar.get('CDL_Hammer', 0) == 1
+        is_engulfing = latest_bar.get('CDL_Engulfing_Bull', 0) == 1
+        is_shooting_star = latest_bar.get('CDL_Shooting_Star', 0) == 1
+        is_marubozu = latest_bar.get('CDL_Marubozu', 0) == 1
+        ema9 = latest_bar.get('EMA_9', price)
+        ema21 = latest_bar.get('EMA_21', price)
 
         signal = "HOLD"
         confidence = "Neutral"
@@ -228,7 +240,22 @@ class PaperTrader:
         regime = self.regimes.get(sym, "WAITING")
         trend_score = self.trend_scores.get(sym, 50)
         
-        if regime == 'ORB' and sym in self.orb_highs:
+        # Dynamic Regime Override for strong trends
+        if price > ema21 and adx > 25 and regime != 'ORB':
+            regime = 'EMA_TREND'
+            
+        if regime == 'EMA_TREND':
+            # Strategy 1: Trend-Continuation Pullback
+            if price <= (ema9 * 1.002) and price >= (ema9 * 0.998): # Touched EMA-9
+                if is_hammer or is_engulfing:
+                    signal = "BUY"
+                    reason = f"EMA PULLBACK: Trend continuation bounce off EMA-9 at {price:.2f}."
+                else:
+                    reason = f"At EMA-9, waiting for bullish candlestick."
+            else:
+                reason = f"Trending, waiting for EMA-9 pullback."
+                
+        elif regime == 'ORB' and sym in self.orb_highs:
             if price > self.orb_highs[sym]:
                 # Multi-Timeframe Trend Veto
                 if trend_score == 0:
@@ -257,11 +284,51 @@ class PaperTrader:
                     reason = f"MACRO VETO: Blocked ORB Buy for {sym} due to active global headwind."
                 else:
                     signal = "BUY"
-                    reason = f"ORB Breakout confirmed at {price:.2f}. Volume {vol_spike:.1f}x avg, RSI: {rsi:.1f}."
+                    reason = f"ORB Breakout confirmed at {price:.2f}."
+                    if is_marubozu: reason += " Marubozu Confirmation."
                     if self.ai_active and sym in self.ai_forecasts:
                         reason += f" AI Conviction: {self.ai_forecasts[sym]:.2f}."
             else:
                 reason = f"Waiting for breakout above {self.orb_highs[sym]:.2f}"
+                
+        elif regime == 'VWAP':
+            vwap = latest_bar.get('VWAP', price)
+            # If price is heavily stretched below VWAP and prints a bullish reversal candle
+            if price < (vwap * 0.998): # At least 0.2% below VWAP to consider a bounce
+                if is_hammer or is_engulfing:
+                    pattern = "Hammer" if is_hammer else "Engulfing"
+                    
+                    # AI Gate
+                    if self.ai_active and sym in self.ai_forecasts:
+                        prob = self.ai_forecasts[sym]
+                        if prob < 0:
+                            signal = "VETO"
+                            reason = f"AI VETO: Gemini Sentiment is negative ({prob:.2f})."
+                            return {
+                                'symbol': sym, 'last_price': price, 'regime': regime, 'signal': signal,
+                                'rsi': rsi, 'volume_spike': vol_spike, 'adx': adx, 'sentiment': sentiment,
+                                'confidence': confidence, 'reason': reason
+                            }
+                            
+                    if sym in active_negative_stocks:
+                        signal = "VETO"
+                        reason = f"MACRO VETO: Blocked VWAP Bounce for {sym} due to active global headwind."
+                    else:
+                        signal = "BUY"
+                        reason = f"VWAP BOUNCE: Price below VWAP printed {pattern}. Volume {vol_spike:.1f}x avg."
+                        if self.ai_active and sym in self.ai_forecasts:
+                            reason += f" AI Conviction: {self.ai_forecasts[sym]:.2f}."
+                else:
+                    reason = f"Below VWAP ({vwap:.2f}) waiting for bullish candlestick pattern."
+            # Strategy 2: VWAP Resistance Reversal (SHORT)
+            elif price > (vwap * 1.002):
+                if is_shooting_star:
+                    signal = "SELL" # SHORT
+                    reason = f"VWAP REJECTION (SHORT): Price overextended above VWAP printed Shooting Star."
+                else:
+                    reason = f"Above VWAP ({vwap:.2f}) waiting for bearish candlestick pattern (Shooting Star)."
+            else:
+                reason = f"Price too close to VWAP ({vwap:.2f}) to trade."
                 
         return {
             'symbol': sym,
@@ -374,41 +441,49 @@ class PaperTrader:
                 exit_price = None
                 reason = None
                 
-                # --- Trailing Stop-Loss Logic (1R Step) ---
-                risk_dist = p['entry_price'] - p['stop_loss']
-                if risk_dist > 0: # Long position
-                    # If price has moved 1R in our favor, move stop to Breakeven
-                    if high >= (p['entry_price'] + risk_dist) and p['stop_loss'] < p['entry_price']:
-                        new_stop = p['entry_price']
-                        cursor.execute("UPDATE paper_positions SET stop_loss=? WHERE id=?", (new_stop, int(p['id'])))
-                        conn.commit()
-                        log.info(f"Trailing Stop Triggered for {sym}: Moved Stop to Breakeven ({new_stop:.2f})")
-                        p['stop_loss'] = new_stop # Update local reference for the tick evaluate
+                direction = p.get('direction', 'LONG')
                 
-                if low <= p['stop_loss']:
-                    exit_price = min(latest_bar['Open'], p['stop_loss'])
-                    reason = "stop"
-                elif high >= p['target']:
-                    exit_price = max(latest_bar['Open'], p['target'])
-                    reason = "target"
+                # --- Trailing Stop-Loss Removed ---
+                # Backtesting proved moving stops to breakeven at 1R drops the win rate to 7%.
+                # We now let trades breathe to their 3.0x target or 1.5x stop.
+                
+                if direction == 'LONG':
+                    if low <= p['stop_loss']:
+                        exit_price = min(latest_bar['Open'], p['stop_loss'])
+                        reason = "stop"
+                    elif high >= p['target']:
+                        exit_price = max(latest_bar['Open'], p['target'])
+                        reason = "target"
+                else:
+                    if high >= p['stop_loss']:
+                        exit_price = max(latest_bar['Open'], p['stop_loss'])
+                        reason = "stop"
+                    elif low <= p['target']:
+                        exit_price = min(latest_bar['Open'], p['target'])
+                        reason = "target"
                     
                 if exit_price is not None:
                     trade_value = p['qty'] * exit_price
                     brokerage = min(trade_value * 0.0005, 20.0) + (trade_value * 0.00025)
-                    pnl = trade_value - brokerage - (p['qty'] * p['entry_price'])
+                    
+                    if direction == 'LONG':
+                        pnl = trade_value - brokerage - (p['qty'] * p['entry_price'])
+                        new_equity = acc['equity'] + trade_value - brokerage
+                    else:
+                        pnl = (p['qty'] * p['entry_price']) - trade_value - brokerage
+                        new_equity = acc['equity'] + (p['qty'] * p['entry_price']) + pnl
                     
                     cursor.execute("DELETE FROM paper_positions WHERE id=?", (int(p['id']),))
                     cursor.execute("""
-                        INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes, trade_type)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (sym, p['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), p['entry_price'], exit_price, int(p['qty']), pnl, reason, "Target/Stop Hit", p.get('trade_type', 'INTRADAY')))
+                        INSERT INTO paper_trades (symbol, entry_time, exit_time, entry_price, exit_price, qty, pnl, reason, notes, trade_type, direction)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (sym, p['entry_time'], current_time.strftime('%Y-%m-%d %H:%M:%S'), p['entry_price'], exit_price, int(p['qty']), pnl, reason, "Target/Stop Hit", p.get('trade_type', 'INTRADAY'), direction))
                     
-                    new_equity = acc['equity'] + trade_value - brokerage
                     new_peak = max(acc['peak_equity'], new_equity)
                     cursor.execute("UPDATE paper_account SET equity=?, peak_equity=? WHERE id=1", (new_equity, new_peak))
                     acc['equity'] = new_equity
                     acc['peak_equity'] = new_peak
-                    log.info(f"Closed {sym}: {reason} | PnL: {pnl:.2f}")
+                    log.info(f"Closed {sym} ({direction}): {reason} | PnL: {pnl:.2f}")
                     continue
                     
             # Evaluate Signal
@@ -429,7 +504,7 @@ class PaperTrader:
                     """, (sym, current_time.strftime('%Y-%m-%d %H:%M:%S'), current_time.strftime('%Y-%m-%d %H:%M:%S'), price, price, 0, 0.0, "macro_veto", eval_data['reason'], 'INTRADAY'))
                     continue
                     
-                if eval_data['signal'] == 'BUY':
+                if eval_data['signal'] in ['BUY', 'SELL']:
                     # Calculate ATR for stop
                     df_ta = df.copy()
                     if len(df_ta) >= 14:
@@ -439,30 +514,29 @@ class PaperTrader:
                         avg_range_pct = self.avg_5m_ranges.get(sym, 0.005)
                         slippage_rate = self._compute_dynamic_slippage(range_pct, avg_range_pct)
                         
-                        exec_price = price * (1 + slippage_rate)
+                        direction = 'LONG' if eval_data['signal'] == 'BUY' else 'SHORT'
+                        exec_price = price * (1 + slippage_rate) if direction == 'LONG' else price * (1 - slippage_rate)
                         stop_dist = atr * self.best_orb['orb_stop']
                         
                         if stop_dist > 0:
-                                    
                                 risk_to_use = self.risk_per_trade
                                 multiplier_used = 1.0
                                 
-                                # Apply Linear Fractional Sizing based on Multi-Timeframe Trend and Conviction
                                 ml_prob = self.ai_forecasts.get(sym, self.ai_threshold) if self.ai_active else self.ai_threshold
                                 trend_score = self.trend_scores.get(sym, 50)
-                                
-                                # Formula: base_risk * (trend / 100) * (ml_prob / threshold) * market_regime_multiplier
                                 dynamic_risk = self.risk_per_trade * (trend_score / 100.0) * (ml_prob / self.ai_threshold) * self.market_regime_multiplier
                                 
-                                # Cap it at 1% max per instruction
                                 risk_to_use = min(dynamic_risk, self.risk_per_trade)
                                 multiplier_used = dynamic_risk / self.risk_per_trade if self.risk_per_trade > 0 else 1.0
                                         
-                                if sym in active_positive_stocks:
-                                    # Still apply macro boost, but cap at 1% max per instructions
+                                if sym in active_positive_stocks and direction == 'LONG':
                                     multiplier_used *= 1.5
                                     risk_to_use = min(risk_to_use * 1.5, self.risk_per_trade)
                                     log.info(f"MACRO CONVICTION: Increased risk multiplier for {sym} due to tailwind.")
+                                elif sym in active_negative_stocks and direction == 'SHORT':
+                                    multiplier_used *= 1.5
+                                    risk_to_use = min(risk_to_use * 1.5, self.risk_per_trade)
+                                    log.info(f"MACRO CONVICTION: Increased risk multiplier for {sym} due to headwind (SHORT).")
                                 
                                 risk_amt = acc['equity'] * risk_to_use
                                 qty = int(risk_amt / stop_dist)
@@ -477,15 +551,18 @@ class PaperTrader:
                                     cursor.execute("UPDATE paper_account SET equity=? WHERE id=1", (new_equity,))
                                     acc['equity'] = new_equity
                                     
-                                    stop_loss = exec_price - stop_dist
-                                    target = exec_price + (atr * self.best_orb['orb_target'])
+                                    if direction == 'LONG':
+                                        stop_loss = exec_price - stop_dist
+                                        target = exec_price + (atr * self.best_orb['orb_target'])
+                                    else:
+                                        stop_loss = exec_price + stop_dist
+                                        target = exec_price - (atr * self.best_orb['orb_target'])
                                     
                                     cursor.execute("""
-                                        INSERT INTO paper_positions (symbol, entry_time, entry_price, qty, stop_loss, target, trade_type)
-                                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                                    """, (sym, current_time.strftime('%Y-%m-%d %H:%M:%S'), exec_price, qty, stop_loss, target, 'INTRADAY' if self.regimes.get(sym) == 'ORB' else 'DELIVERY'))
+                                        INSERT INTO paper_positions (symbol, entry_time, entry_price, qty, stop_loss, target, trade_type, direction)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                    """, (sym, current_time.strftime('%Y-%m-%d %H:%M:%S'), exec_price, qty, stop_loss, target, 'INTRADAY' if self.regimes.get(sym) == 'ORB' else 'DELIVERY', direction))
                                     
-                                    # Log the reason for transparency
                                     ai_context = self.ai_rationales.get(sym, "No AI context available")
                                     full_reason = f"{eval_data['reason']} | AI Context: {ai_context}"
                                     cursor.execute("""
@@ -493,7 +570,7 @@ class PaperTrader:
                                     """, (full_reason, sym, current_time.strftime('%Y-%m-%d %H:%M:%S')))
                                     
                                     trade_str_type = 'INTRADAY' if self.regimes.get(sym) == 'ORB' else 'DELIVERY'
-                                    log_str = f"Entered {sym} {self.regimes.get(sym)} Breakout [{trade_str_type}] | Price: {exec_price:.2f} | Qty: {qty} | Slippage: {slippage_rate*100:.3f}%"
+                                    log_str = f"Entered {sym} {self.regimes.get(sym)} {direction} [{trade_str_type}] | Price: {exec_price:.2f} | Qty: {qty} | Slippage: {slippage_rate*100:.3f}%"
                                     if multiplier_used > 1.0:
                                         log_str += f" | (CONVICTION 1.5x)"
                                     log.info(log_str)

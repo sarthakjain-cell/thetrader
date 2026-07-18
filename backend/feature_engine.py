@@ -54,4 +54,52 @@ def compute_features(df: pd.DataFrame) -> pd.DataFrame:
     # 8. Previous Close (Simulated for gap down)
     df['Prev_Close'] = df['Close'].shift(1)
     
+    # 9. --- CANDLESTICK PATTERN RECOGNITION (Vectorized) ---
+    body = (df['Open'] - df['Close']).abs()
+    high_low = df['High'] - df['Low']
+    
+    # Doji: Body is less than 10% of the entire candle range
+    df['CDL_Doji'] = (body <= (high_low * 0.1)).astype(int)
+    
+    # Bullish Hammer / Pin Bar
+    lower_wick = df[['Open', 'Close']].min(axis=1) - df['Low']
+    upper_wick = df['High'] - df[['Open', 'Close']].max(axis=1)
+    df['CDL_Hammer'] = (
+        (lower_wick > 2 * body) & 
+        (upper_wick < body) & 
+        (high_low > df['ATR_14'] * 0.5)
+    ).astype(int)
+    
+    # Bearish Shooting Star
+    df['CDL_Shooting_Star'] = (
+        (upper_wick > 2 * body) &
+        (lower_wick < body) &
+        (high_low > df['ATR_14'] * 0.5)
+    ).astype(int)
+    
+    # Marubozu (Solid Body, negligible wicks)
+    df['CDL_Marubozu'] = (
+        (upper_wick <= (high_low * 0.05)) & 
+        (lower_wick <= (high_low * 0.05)) &
+        (body > df['ATR_14'] * 0.5)
+    ).astype(int)
+    
+    # Bullish Engulfing
+    prev_open = df['Open'].shift(1)
+    prev_close = df['Close'].shift(1)
+    df['CDL_Engulfing_Bull'] = (
+        (prev_open > prev_close) &          # Prev is Red
+        (df['Close'] > df['Open']) &        # Curr is Green
+        (df['Close'] > prev_open) &         # Curr closes above prev open
+        (df['Open'] < prev_close)           # Curr opens below prev close
+    ).astype(int)
+    
+    # Inside Bar
+    prev_high = df['High'].shift(1)
+    prev_low = df['Low'].shift(1)
+    df['CDL_Inside_Bar'] = (
+        (df['High'] < prev_high) & 
+        (df['Low'] > prev_low)
+    ).astype(int)
+    
     return df

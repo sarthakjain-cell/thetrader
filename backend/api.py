@@ -7,7 +7,13 @@ import pandas as pd
 import asyncio
 import json
 import time
+import os
 import yfinance as yf
+from pydantic import BaseModel
+import google.generativeai as genai
+
+# Configure Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI(title="Algotrade Intraday Dashboard")
 
@@ -508,6 +514,60 @@ async def stream_state():
         "Access-Control-Allow-Headers": "*",
         "Access-Control-Allow-Methods": "*"
     })
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/api/chat")
+async def chat_with_bot(request: ChatRequest):
+    try:
+        # Get live context
+        state, _ = fetch_dashboard_state(0)
+        portfolio_val = state.get("account", {}).get("equity", 0)
+        
+        system_prompt = f"""You are AlgoTrade AI, the intelligent institutional trading assistant for this platform.
+Your goal is to help the user navigate the platform, understand their portfolio, and analyze the market.
+
+PLATFORM UI MAP (Navigation):
+- The main navigation bar is on the left side of the screen.
+- To view "Holdings", tell the user to click the Briefcase icon on the left sidebar, OR you can navigate them automatically.
+- To view "Intraday/Dashboard", tell them to click the Dashboard icon (the grid) on the left sidebar, OR navigate them.
+- To start/stop the engine, they must go to the Dashboard and click the Deploy/Stop Engine button. You CANNOT do this for them.
+
+CURRENT PORTFOLIO STATE:
+- Current Equity: Rs {portfolio_val}
+
+AGENTIC CAPABILITIES (The Security Sandbox):
+If the user explicitly asks to switch pages or go to a specific view (like holdings, dashboard, or engine control), you MUST respond with ONLY a JSON object and nothing else. The frontend will execute this JSON.
+Allowed JSON actions:
+- {{"action": "NAVIGATE", "target": "holdings"}}
+- {{"action": "NAVIGATE", "target": "dashboard"}}
+
+For all other general chat, market analysis, or questions, reply in normal conversational Markdown. 
+DO NOT output JSON unless you want to physically move the user's screen.
+NEVER attempt to output a STOP_ENGINE or PLACE_TRADE action (they are blocked by the frontend anyway).
+"""
+        
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction=system_prompt
+        )
+        
+        response = model.generate_content(request.message)
+        response_text = response.text.strip()
+        
+        # Check if the AI decided to use an Agentic JSON Action
+        try:
+            # If it starts with { and ends with }, parse it
+            if response_text.startswith('{') and response_text.endswith('}'):
+                action_data = json.loads(response_text)
+                return {"type": "action", "data": action_data}
+        except:
+            pass
+            
+        return {"type": "text", "message": response_text}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 from fastapi.staticfiles import StaticFiles
 import os
