@@ -1,0 +1,192 @@
+.pageContainer {
+  padding: 24px 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  color: #F3F4F6;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Header / Identity Area - Unboxed, Centered */
+.headerSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.avatarLarge {
+  width: 96px;
+  height: 96px;
+  border-radius: 48px;
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+}
+
+.headerSection h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #fff;
+}
+
+.headerSection p {
+  font-size: 15px;
+  color: #9CA3AF;
+  margin: 0 0 12px 0;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Grouped Lists (iOS Settings Style) */
+.sectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6B7280;
+  margin-left: 16px;
+}
+
+.listGroup {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.listItem {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.listItemRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.listItemLabel {
+  font-size: 16px;
+  font-weight: 500;
+  color: #F9FAFB;
+  white-space: nowrap; /* Prevent wrapping so 'API Key' stays on one line */
+}
+
+/* Inputs styling seamlessly into the list */
+.inputField {
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  font-size: 16px;
+  text-align: right;
+  outline: none;
+  flex: 1;
+  margin-left: 16px;
+  min-width: 0; /* Ensures flex child can shrink */
+}
+
+.inputField::placeholder {
+  color: #4B5563;
+}
+
+/* Minimal Action Button */
+.buttonPrimary {
+  background: transparent;
+  color: #3B82F6;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dotConnected {
+  background-color: #10B981;
+}
+
+.dotDisconnected {
+  background-color: #EF4444;
+}
+
+/* Nav Links */
+.helpLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  color: #E5E7EB;
+  text-decoration: none;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.helpLink:first-child {
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.helpLink:last-child {
+  border-bottom: none;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.helpLinkChevron {
+  color: #6B7280;
+  font-weight: 600;
+}
+
+.helperText {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 8px 16px 0;
+  line-height: 1.4;
+}

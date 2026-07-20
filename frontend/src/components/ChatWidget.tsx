@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
   id: string;
@@ -36,8 +37,8 @@ export const ChatWidget: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const host = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
-      const response = await fetch(`${host}/api/chat`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://206.189.129.232:8000';
+      const response = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input })
@@ -50,10 +51,12 @@ export const ChatWidget: React.FC = () => {
         if (action.action === 'NAVIGATE') {
           const target = action.target.toLowerCase();
           setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: `Navigating you to ${target}...` }]);
-          if (target === 'holdings') {
+          if (target === 'holdings' || target === 'portfolio') {
             router.push('/holdings');
-          } else if (target === 'dashboard') {
+          } else if (target === 'dashboard' || target === 'home') {
             router.push('/');
+          } else if (target === 'profile' || target === 'settings') {
+            router.push('/profile');
           }
         }
       } else {
@@ -68,9 +71,13 @@ export const ChatWidget: React.FC = () => {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+    <>
       {isOpen ? (
         <div style={{
+          position: 'fixed', 
+          bottom: '85px', 
+          right: '16px', 
+          zIndex: 9999,
           width: '350px',
           height: '500px',
           backgroundColor: 'rgba(15, 23, 42, 0.85)',
@@ -176,29 +183,41 @@ export const ChatWidget: React.FC = () => {
           </div>
         </div>
       ) : (
-        <button 
+        <motion.div
+          initial={{ x: 20 }}
+          animate={{ x: 0 }}
+          whileHover={{ x: -2, background: 'rgba(30, 41, 59, 0.8)' }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setIsOpen(true)}
           style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '30px',
-            background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
-            border: 'none',
-            color: '#fff',
-            fontSize: '24px',
-            cursor: 'pointer',
-            boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
+            position: 'fixed',
+            right: 0,
+            bottom: '25%',
+            width: '28px',
+            height: '56px',
+            background: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRight: 'none',
+            borderRadius: '28px 0 0 28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'transform 0.2s',
+            cursor: 'pointer',
+            boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.2)',
+            zIndex: 9999,
+            transition: 'background 0.3s ease'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-          onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         >
-          ✨
-        </button>
+          <span style={{
+            fontSize: '14px',
+            color: '#60A5FA',
+            textShadow: '0 0 8px rgba(96, 165, 250, 0.8)'
+          }}>
+            ✦
+          </span>
+        </motion.div>
       )}
-    </div>
+    </>
   );
 };

@@ -11,6 +11,9 @@ import os
 import yfinance as yf
 from pydantic import BaseModel
 import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -538,34 +541,50 @@ CURRENT PORTFOLIO STATE:
 - Current Equity: Rs {portfolio_val}
 
 AGENTIC CAPABILITIES (The Security Sandbox):
-If the user explicitly asks to switch pages or go to a specific view (like holdings, dashboard, or engine control), you MUST respond with ONLY a JSON object and nothing else. The frontend will execute this JSON.
+If the user explicitly asks to switch pages or go to a specific view (like holdings, dashboard, profile, or engine control), you MUST respond with ONLY a JSON object and nothing else. The frontend will execute this JSON.
 Allowed JSON actions:
 - {{"action": "NAVIGATE", "target": "holdings"}}
 - {{"action": "NAVIGATE", "target": "dashboard"}}
+- {{"action": "NAVIGATE", "target": "profile"}}
 
 For all other general chat, market analysis, or questions, reply in normal conversational Markdown. 
 DO NOT output JSON unless you want to physically move the user's screen.
 NEVER attempt to output a STOP_ENGINE or PLACE_TRADE action (they are blocked by the frontend anyway).
 """
         
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            system_instruction=system_prompt
-        )
+        model = genai.GenerativeModel(model_name="gemini-flash-latest")
         
-        response = model.generate_content(request.message)
+        full_prompt = f"{system_prompt}\n\nUSER MESSAGE:\n{request.message}"
+        response = model.generate_content(full_prompt)
         response_text = response.text.strip()
         
         # Check if the AI decided to use an Agentic JSON Action
         try:
-            # If it starts with { and ends with }, parse it
-            if response_text.startswith('{') and response_text.endswith('}'):
-                action_data = json.loads(response_text)
+            # Strip markdown json blocks if the model wrapped it
+            clean_text = response_text.replace("```json", "").replace("```", "").strip()
+            if clean_text.startswith('{') and clean_text.endswith('}'):
+                action_data = json.loads(clean_text)
                 return {"type": "action", "data": action_data}
         except:
             pass
             
         return {"type": "text", "message": response_text}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+class KeyRequest(BaseModel):
+    gemini_key: str
+
+@app.post("/api/keys")
+async def update_keys(request: KeyRequest):
+    try:
+        from dotenv import set_key
+        # Save to .env persistently
+        set_key(".env", "GEMINI_API_KEY", request.gemini_key)
+        # Update the current running instance
+        genai.configure(api_key=request.gemini_key)
+        os.environ["GEMINI_API_KEY"] = request.gemini_key
+        return {"status": "success", "message": "Key securely saved"}
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 

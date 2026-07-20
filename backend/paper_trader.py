@@ -21,8 +21,8 @@ class PaperTrader:
     def __init__(self, data_provider, is_live=True):
         self.provider = data_provider
         self.is_live = is_live
-        # Updated via Backtester Truths (Epic 24)
-        self.best_orb = {'orb_bars': 6, 'orb_target': 3.0, 'orb_stop': 1.5}
+        # Updated via Walk-Forward Optimization
+        self.best_orb = {'orb_bars': 6, 'orb_target': 2.0, 'orb_stop': 1.0}
         self.symbols = NIFTY_SYMBOLS
         self.today_date = None
         self.regimes = {} # symbol -> regime
@@ -582,6 +582,12 @@ class PaperTrader:
         log.info("Starting Live Paper Trader Daemon...")
         while True:
             now = datetime.now(ZoneInfo('Asia/Kolkata'))
+            
+            # Block weekends (Saturday = 5, Sunday = 6)
+            if now.weekday() >= 5:
+                time.sleep(3600) # Sleep for an hour on weekends
+                continue
+                
             # Market hours: 09:15 to 15:30
             if now.hour == 9 and now.minute < 15:
                 time.sleep(60)
