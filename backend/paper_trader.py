@@ -27,6 +27,7 @@ class PaperTrader:
         self.today_date = None
         self.regimes = {} # symbol -> regime
         self.orb_highs = {} # symbol -> high
+        self.orb_lows = {}  # symbol -> low
         self.avg_5m_ranges = {} # symbol -> avg range
         
         # Risk Limits
@@ -255,7 +256,7 @@ class PaperTrader:
             else:
                 reason = f"Trending, waiting for EMA-9 pullback."
                 
-        elif regime == 'ORB' and sym in self.orb_highs:
+        elif regime == 'ORB' and sym in self.orb_highs and sym in self.orb_lows:
             if price > self.orb_highs[sym]:
                 # Multi-Timeframe Trend Veto
                 if trend_score == 0:
@@ -267,12 +268,12 @@ class PaperTrader:
                         'confidence': confidence, 'reason': reason
                     }
                     
-                # Check AI Gate
+                # Check strict AI Gate
                 if self.ai_active and sym in self.ai_forecasts:
                     prob = self.ai_forecasts[sym]
                     if prob < 0:
                         signal = "VETO"
-                        reason = f"AI VETO: Gemini Sentiment is negative ({prob:.2f}). Rationale: {self.ai_rationales.get(sym, '')}"
+                        reason = f"AI VETO: Gemini Sentiment is negative ({prob:.2f}). Strict veto enforced on LONG. Rationale: {self.ai_rationales.get(sym, '')}"
                         return {
                             'symbol': sym, 'last_price': price, 'regime': regime, 'signal': signal,
                             'rsi': rsi, 'volume_spike': vol_spike, 'adx': adx, 'sentiment': sentiment,
@@ -288,8 +289,40 @@ class PaperTrader:
                     if is_marubozu: reason += " Marubozu Confirmation."
                     if self.ai_active and sym in self.ai_forecasts:
                         reason += f" AI Conviction: {self.ai_forecasts[sym]:.2f}."
+            elif price < self.orb_lows[sym]:
+                # Short Selling (ORB Breakdown)
+                if trend_score == 100:
+                    signal = "VETO"
+                    reason = f"TREND VETO: Multi-Timeframe alignment is HIGH (Score 100). Fighting the trend."
+                    return {
+                        'symbol': sym, 'last_price': price, 'regime': regime, 'signal': signal,
+                        'rsi': rsi, 'volume_spike': vol_spike, 'adx': adx, 'sentiment': sentiment,
+                        'confidence': confidence, 'reason': reason
+                    }
+                    
+                # Check strict AI Gate for Shorts
+                if self.ai_active and sym in self.ai_forecasts:
+                    prob = self.ai_forecasts[sym]
+                    if prob > 0:
+                        signal = "VETO"
+                        reason = f"AI VETO: Gemini Sentiment is positive ({prob:.2f}). Strict veto enforced on SHORT. Rationale: {self.ai_rationales.get(sym, '')}"
+                        return {
+                            'symbol': sym, 'last_price': price, 'regime': regime, 'signal': signal,
+                            'rsi': rsi, 'volume_spike': vol_spike, 'adx': adx, 'sentiment': sentiment,
+                            'confidence': confidence, 'reason': reason
+                        }
+                        
+                if sym in active_positive_stocks:
+                    signal = "VETO"
+                    reason = f"MACRO VETO: Blocked ORB Short for {sym} due to active global tailwind."
+                else:
+                    signal = "SELL"
+                    reason = f"ORB Breakdown (SHORT) confirmed at {price:.2f}."
+                    if is_marubozu: reason += " Marubozu Confirmation."
+                    if self.ai_active and sym in self.ai_forecasts:
+                        reason += f" AI Conviction: {self.ai_forecasts[sym]:.2f}."
             else:
-                reason = f"Waiting for breakout above {self.orb_highs[sym]:.2f}"
+                reason = f"Waiting for breakout outside {self.orb_lows[sym]:.2f} - {self.orb_highs[sym]:.2f}"
                 
         elif regime == 'VWAP':
             vwap = latest_bar.get('VWAP', price)
@@ -426,8 +459,10 @@ class PaperTrader:
             # If in ORB regime, wait for 30m ORB to form (6 bars)
             if self.regimes.get(sym) == 'ORB' and len(df) >= self.best_orb['orb_bars']:
                 if sym not in self.orb_highs:
-                    self.orb_highs[sym] = df.iloc[:self.best_orb['orb_bars']]['High'].max()
-                    log.info(f"{sym} ORB High Set: {self.orb_highs[sym]}")
+                    orb_slice = df.iloc[:self.best_orb['orb_bars']]
+                    self.orb_highs[sym] = orb_slice['High'].max()
+                    self.orb_lows[sym] = orb_slice['Low'].min()
+                    log.info(f"{sym} ORB Set: High {self.orb_highs[sym]:.2f}, Low {self.orb_lows[sym]:.2f}")
                     
             latest_bar = df.iloc[-1]
             price = latest_bar['Close']
@@ -443,21 +478,25 @@ class PaperTrader:
                 
                 direction = p.get('direction', 'LONG')
                 
-                # --- Trailing Stop-Loss Removed ---
+                # --- EMA Trailing Stop-Loss Engine ---
                 # Backtesting proved moving stops to breakeven at 1R drops the win rate to 7%.
-                # We now let trades breathe to their 3.0x target or 1.5x stop.
+                # Instead, we use an adaptive EMA-9 trail to let runners go.
+                df_ta = compute_features(df.tail(20))
+                ema9 = df_ta.iloc[-1].get('EMA_9', price)
                 
                 if direction == 'LONG':
-                    if low <= p['stop_loss']:
-                        exit_price = min(latest_bar['Open'], p['stop_loss'])
-                        reason = "stop"
+                    dynamic_stop = max(p['stop_loss'], ema9 - (ema9 * 0.001)) # Hug slightly below EMA
+                    if low <= dynamic_stop:
+                        exit_price = min(latest_bar['Open'], dynamic_stop)
+                        reason = "ema_trailing_stop"
                     elif high >= p['target']:
                         exit_price = max(latest_bar['Open'], p['target'])
                         reason = "target"
                 else:
-                    if high >= p['stop_loss']:
-                        exit_price = max(latest_bar['Open'], p['stop_loss'])
-                        reason = "stop"
+                    dynamic_stop = min(p['stop_loss'], ema9 + (ema9 * 0.001)) # Hug slightly above EMA
+                    if high >= dynamic_stop:
+                        exit_price = max(latest_bar['Open'], dynamic_stop)
+                        reason = "ema_trailing_stop"
                     elif low <= p['target']:
                         exit_price = min(latest_bar['Open'], p['target'])
                         reason = "target"
