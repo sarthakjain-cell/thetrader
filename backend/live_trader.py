@@ -47,12 +47,21 @@ class MetaAllocator:
     def __init__(self, total_capital: float):
         self.total_capital = total_capital
         
-    def allocate(self, intents: list, open_positions_count: int) -> list:
+    def allocate(self, intents: list, open_positions_count: int, daily_trades: int = 0, daily_pnl: float = 0.0) -> list:
         """
         Deduplicates intents and allocates capital.
         intents format: [{"symbol": "REL", "strategy_id": "S1", "conviction": 0.8, "signal_dict": {...}}, ...]
         """
         if not intents:
+            return []
+            
+        # Circuit Breakers
+        if daily_trades >= 5:
+            log.warning(f"MetaAllocator Circuit Breaker: Daily trade limit reached ({daily_trades}/5). Vetoing all new trades.")
+            return []
+            
+        if daily_pnl <= -3000:
+            log.warning(f"MetaAllocator Circuit Breaker: Max daily drawdown exceeded (₹{daily_pnl:.2f}). Vetoing all new trades.")
             return []
             
         # 1. Deduplicate by symbol, keeping the one with highest conviction
@@ -80,7 +89,13 @@ class MetaAllocator:
         # Allocate capital (10% of total capital per trade = 100k)
         allocation_per_trade = self.total_capital * 0.10
         
-        for intent in selected_intents:
+        trades_left_today = 5 - daily_trades
+        
+        for i, intent in enumerate(selected_intents):
+            if i >= trades_left_today:
+                log.warning(f"MetaAllocator Veto: Trade {intent['symbol']} skipped to respect 5 trades/day limit.")
+                break
+                
             price = intent["price"]
             qty = int(allocation_per_trade / price)
             if qty > 0:
@@ -183,6 +198,31 @@ class MultiStrategyEngine:
         raw_intents = []
         open_positions_count = len(positions_df)
         
+        # Calculate today's metrics for circuit breakers
+        today_str = now.strftime('%Y-%m-%d')
+        
+        # 1. Closed trades today
+        closed_trades_df = pd.read_sql(f"SELECT pnl FROM paper_trades WHERE date(exit_time) = '{today_str}'", conn)
+        closed_count = len(closed_trades_df)
+        realized_pnl = closed_trades_df['pnl'].sum() if not closed_trades_df.empty else 0.0
+        
+        # 2. Open positions opened today
+        open_pos_df = pd.read_sql(f"SELECT entry_time, entry_price, qty, symbol FROM paper_positions WHERE date(entry_time) = '{today_str}'", conn)
+        open_count = len(open_pos_df)
+        
+        # Calculate unrealized PnL
+        unrealized_pnl = 0.0
+        if not open_pos_df.empty:
+            for _, row in open_pos_df.iterrows():
+                sym = row['symbol']
+                if sym in data:
+                    current_price = data[sym].iloc[-1]['Close']
+                    # Simplified: assumes LONG
+                    unrealized_pnl += (current_price - row['entry_price']) * row['qty']
+                    
+        daily_trades_count = closed_count + open_count
+        daily_pnl = realized_pnl + unrealized_pnl
+        
         # Phase 1: Evaluate Strategies and Manage Positions
         for strategy in self.strategies:
             strat_id = strategy.strategy_id
@@ -230,7 +270,7 @@ class MultiStrategyEngine:
         # Phase 2: Meta-Allocator filters and sizes intents
         if raw_intents:
             log.info(f"MetaAllocator evaluating {len(raw_intents)} raw intents...")
-            approved_trades = self.allocator.allocate(raw_intents, open_positions_count)
+            approved_trades = self.allocator.allocate(raw_intents, open_positions_count, daily_trades_count, daily_pnl)
             
             for trade in approved_trades:
                 sym = trade["symbol"]

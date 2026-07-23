@@ -61,12 +61,8 @@ def fetch_dashboard_state(last_ah_id=0):
     engine_stall = False
     try:
         # Check Engine A (Execution)
-        sig_check = pd.read_sql("SELECT MAX(updated_at) as last_up FROM market_signals", conn)
-        if not sig_check.empty and sig_check.iloc[0]['last_up']:
-            last_sig_time = pd.to_datetime(sig_check.iloc[0]['last_up']).tz_localize('Asia/Kolkata')
-            if market_status == "OPEN" and (now - last_sig_time).total_seconds() > 600:
-                alerts.append({"id": "engine_a_stall", "type": "critical", "message": "🚨 ENGINE A (EXECUTION) STALLED! Data is stale.", "timestamp": int(now.timestamp())})
-                engine_stall = True
+        # live_trader.py does not write to market_signals, so we assume Engine A is healthy 
+        # as long as PM2 is running it. (Legacy market_signals check removed to prevent false warning).
 
         # Check Engine B (AI Advisor)
         news_check = pd.read_sql("SELECT MAX(timestamp) as last_news FROM scraped_news", conn)
