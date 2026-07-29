@@ -11,12 +11,19 @@ def save_bars_to_db(df):
     try:
         conn = sqlite3.connect(DB_PATH, timeout=10)
         cursor = conn.cursor()
-        for _, row in df.iterrows():
-            cursor.execute('''
-                INSERT OR REPLACE INTO intraday_5m 
-                (symbol, datetime, open, high, low, close, volume)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (row['Symbol'], str(row['Datetime']), row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
+        
+        # Optimize memory and CPU using bulk transaction
+        records = [
+            (row['Symbol'], str(row['Datetime']), row['Open'], row['High'], row['Low'], row['Close'], row['Volume'])
+            for _, row in df.iterrows()
+        ]
+        
+        cursor.executemany('''
+            INSERT OR REPLACE INTO intraday_5m 
+            (symbol, datetime, open, high, low, close, volume)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', records)
+        
         conn.commit()
         conn.close()
     except Exception as e:
@@ -31,11 +38,16 @@ class DataProvider(ABC):
 class YFinanceProvider(DataProvider):
     def get_today_data(self, symbols: list) -> dict:
         try:
+            import requests
+            session = requests.Session()
             tickers_str = " ".join(symbols)
             log.info(f"Batch downloading {len(symbols)} symbols...")
             
             # Fetch last 2 days just to be safe with timezone boundaries
-            df_raw = yf.download(tickers=tickers_str, period="2d", interval="5m", group_by="ticker", progress=False)
+            df_raw = yf.download(tickers=tickers_str, period="2d", interval="5m", group_by="ticker", progress=False, session=session)
+            
+            # Force close the session to free TCP sockets and RAM
+            session.close()
             
             if df_raw.empty:
                 return {}

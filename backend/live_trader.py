@@ -2,6 +2,7 @@ import time
 import asyncio
 import sqlite3
 import pandas as pd
+import gc
 from datetime import datetime, time as dtime
 from zoneinfo import ZoneInfo
 from logger import log
@@ -180,6 +181,13 @@ class MultiStrategyEngine:
                             neg_stocks.add(s.strip())
                 context["active_negative_stocks"] = neg_stocks
                 
+            # Fetch AI Forecasts
+            df_ai = pd.read_sql(f"SELECT symbol, probability FROM daily_ai_forecasts WHERE date='{today_str}'", conn)
+            context["ai_forecasts"] = {}
+            if not df_ai.empty:
+                for _, row in df_ai.iterrows():
+                    context["ai_forecasts"][row['symbol']] = float(row['probability'])
+                
         except Exception as e:
             log.error(f"Failed to fetch context: {e}")
         finally:
@@ -288,6 +296,12 @@ class MultiStrategyEngine:
                 
         conn.commit()
         conn.close()
+        
+        # Explicit garbage collection to flush memory
+        del data
+        del positions_df
+        del raw_intents
+        gc.collect()
 
 async def trading_loop():
     engine = MultiStrategyEngine()

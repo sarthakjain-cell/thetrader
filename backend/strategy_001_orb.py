@@ -36,11 +36,18 @@ class Strategy001ORB(BaseStrategy):
                 signal_dict["reason"] = "VETO: Macro Headwind Active"
                 return signal_dict
                 
+            # Check ML Oracle Probability
+            ml_prob = context.get('ai_forecasts', {}).get(symbol, 0.5)
+            
+            if ml_prob < 0.55:
+                signal_dict["reason"] = f"VETO: AI predicts ORB failure ({ml_prob:.2f} < 0.55)"
+                return signal_dict
+                
             signal_dict["signal"] = "BUY"
-            signal_dict["reason"] = f"ORB Breakout above {orb_high:.2f}"
+            signal_dict["reason"] = f"AI Vetted Breakout ({ml_prob:.2f} probability)"
             signal_dict["stop_loss"] = stop_loss
             signal_dict["target"] = target
-            signal_dict["conviction"] = 0.8
+            signal_dict["conviction"] = ml_prob
         else:
             signal_dict["reason"] = f"Price {price:.2f} below ORB high {orb_high:.2f}"
             
