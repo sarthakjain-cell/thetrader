@@ -583,6 +583,70 @@ async def update_keys(request: KeyRequest):
         return {"status": "success", "message": "Key securely saved"}
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+class ConfigUpdate(BaseModel):
+    max_daily_loss: float
+    max_trades: int
+    ai_active: bool
+    orb_active: bool
+    vwap_active: bool
+    kill_switch: bool
+
+@app.get("/api/config")
+async def get_config():
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM model_config")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        config = {
+            "max_daily_loss": 3000,
+            "max_trades": 5,
+            "ai_active": True,
+            "orb_active": True,
+            "vwap_active": True,
+            "kill_switch": False
+        }
+        
+        for k, v in rows:
+            if k in config:
+                config[k] = bool(v) if isinstance(config[k], bool) else v
+                
+        return config
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.post("/api/config")
+async def update_config(config: ConfigUpdate):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        now_str = pd.Timestamp.now('Asia/Kolkata').strftime("%Y-%m-%d %H:%M:%S")
+        
+        updates = [
+            ("max_daily_loss", float(config.max_daily_loss), now_str),
+            ("max_trades", float(config.max_trades), now_str),
+            ("ai_active", float(config.ai_active), now_str),
+            ("orb_active", float(config.orb_active), now_str),
+            ("vwap_active", float(config.vwap_active), now_str),
+            ("kill_switch", float(config.kill_switch), now_str)
+        ]
+        
+        cursor.executemany('''
+            INSERT OR REPLACE INTO model_config (key, value, updated_at) 
+            VALUES (?, ?, ?)
+        ''', updates)
+        
+        # If kill switch is hit, halt the paper account instantly
+        if config.kill_switch:
+            cursor.execute("UPDATE paper_account SET is_halted=1 WHERE id=1")
+            
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "Config updated"}
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 from fastapi.staticfiles import StaticFiles
 import os

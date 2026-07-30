@@ -1,22 +1,26 @@
 :root {
   /* Backgrounds */
-  --bg-root: #000000;
-  --bg-surface: #0d1117;
-  --bg-glass: rgba(13, 17, 23, 0.7);
-  --bg-hover: rgba(176, 184, 196, 0.05);
+  --bg-root: #050505;
+  --bg-surface: rgba(15, 23, 42, 0.4);
+  --bg-glass: rgba(15, 23, 42, 0.7);
+  --bg-hover: rgba(59, 130, 246, 0.1);
 
   /* Structure */
-  --border-color: #b0b8c4;
-  --border-subtle: rgba(176, 184, 196, 0.2);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  
+  /* Glass Blur */
+  --backdrop-blur: blur(12px);
 
   /* Accents */
-  --accent-gold: #e5b73e;
-  --profit-green: #00c897;
-  --loss-red: #e63946;
+  --accent-blue: #3b82f6;
+  --accent-gold: #fbbf24;
+  --profit-green: #10b981;
+  --loss-red: #ef4444;
   --info-amber: #f59e0b;
 
   /* Typography */
-  --text-primary: #ffffff;
-  --text-secondary: #8b949e;
-  --text-inverse: #000000;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-inverse: #020617;
 }

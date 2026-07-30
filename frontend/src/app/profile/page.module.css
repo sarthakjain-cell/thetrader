@@ -2,90 +2,104 @@
   padding: 24px 16px;
   max-width: 600px;
   margin: 0 auto;
-  color: #F3F4F6;
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   gap: 32px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   height: 100vh;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Header / Identity Area - Unboxed, Centered */
+/* Header / Identity Area */
 .headerSection {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   margin-top: 16px;
+  position: relative;
 }
 
 .avatarLarge {
   width: 96px;
   height: 96px;
   border-radius: 48px;
-  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  background: linear-gradient(135deg, var(--accent-blue), #8B5CF6);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 36px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
   margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 32px rgba(59, 130, 246, 0.4);
+  animation: pulse-glow 3s infinite alternate;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+  100% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.6); }
 }
 
 .headerSection h1 {
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 4px 0;
-  color: #fff;
+  letter-spacing: -0.5px;
 }
 
 .headerSection p {
   font-size: 15px;
-  color: #9CA3AF;
+  color: var(--text-secondary);
   margin: 0 0 12px 0;
 }
 
 .badge {
   display: inline-block;
-  background: rgba(16, 185, 129, 0.1);
-  color: #10B981;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 600;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--profit-green);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-/* Grouped Lists (iOS Settings Style) */
+/* Grouped Lists (iOS Settings Style + Glassmorphism) */
 .sectionGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .sectionTitle {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6B7280;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
   margin-left: 16px;
 }
 
 .listGroup {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .listItem {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.2s;
 }
 
 .listItem:last-child {
@@ -99,94 +113,111 @@
 }
 
 .listItemLabel {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
-  color: #F9FAFB;
-  white-space: nowrap; /* Prevent wrapping so 'API Key' stays on one line */
+  color: var(--text-primary);
 }
 
 /* Inputs styling seamlessly into the list */
 .inputField {
-  background: transparent;
-  border: none;
-  color: #9CA3AF;
-  font-size: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--accent-gold);
+  font-weight: 600;
+  font-size: 15px;
   text-align: right;
   outline: none;
-  flex: 1;
-  margin-left: 16px;
-  min-width: 0; /* Ensures flex child can shrink */
+  padding: 6px 12px;
+  width: 100px;
+  transition: all 0.2s;
 }
 
-.inputField::placeholder {
-  color: #4B5563;
+.inputField:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Minimal Action Button */
-.buttonPrimary {
-  background: transparent;
-  color: #3B82F6;
-  border: none;
-  font-size: 16px;
-  font-weight: 500;
+/* Toggle Switch (iOS Style) */
+.toggleSwitch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   cursor: pointer;
-  padding: 0;
-  text-align: left;
+  transition: background-color 0.3s;
 }
 
-.statusIndicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
+.toggleSwitch[data-active="true"] {
+  background-color: var(--profit-green);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
+.toggleKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: #fff;
   border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.dotConnected {
-  background-color: #10B981;
+.toggleSwitch[data-active="true"] .toggleKnob {
+  transform: translateX(20px);
 }
 
-.dotDisconnected {
-  background-color: #EF4444;
-}
-
-/* Nav Links */
-.helpLink {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Emergency Kill Button */
+.killButton {
+  width: 100%;
   padding: 16px;
-  color: #E5E7EB;
-  text-decoration: none;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 16px;
+  color: var(--loss-red);
   font-size: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
 }
 
-.helpLink:first-child {
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+.killButton:hover {
+  background: rgba(239, 68, 68, 0.2);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
 }
 
-.helpLink:last-child {
-  border-bottom: none;
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
+.killButton:active {
+  transform: scale(0.98);
 }
 
-.helpLinkChevron {
-  color: #6B7280;
+/* Action Button */
+.saveButton {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  border-radius: 8px;
   font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saveButton:hover {
+  background: #2563eb;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 .helperText {
   font-size: 13px;
-  color: #6B7280;
-  margin: 8px 16px 0;
-  line-height: 1.4;
+  color: var(--text-secondary);
+  margin: 4px 16px 0;
+  line-height: 1.5;
 }

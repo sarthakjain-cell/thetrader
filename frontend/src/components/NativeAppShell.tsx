@@ -16,8 +16,8 @@ export const NativeAppShell: React.FC<{ children: React.ReactNode }> = ({ childr
         await StatusBar.setStyle({ style: Style.Dark });
         await StatusBar.setOverlaysWebView({ overlay: true });
         
-        // Hide splash screen after React mounts
-        await SplashScreen.hide();
+        // We do NOT hide the splash screen here anymore! 
+        // SplashHider.tsx handles it with a delay to prevent UI glitching.
       } catch (err) {
         console.warn("Native setup error:", err);
       }

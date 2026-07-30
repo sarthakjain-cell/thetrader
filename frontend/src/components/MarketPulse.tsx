@@ -45,7 +45,7 @@ export const MarketPulse: React.FC = () => {
   }, []);
 
   if (loading) {
-    return <div className={styles.scrollContainer}><div className={styles.capsule}>Loading AI Pulse...</div></div>;
+    return <div style={{ height: '70px' }}></div>; // Empty placeholder to prevent layout shift without flashing text
   }
 
   if (indices.length === 0) return null;

@@ -1,12 +1,83 @@
 "use client";
 
-import React, { useState } from 'react';
-import { User, ChevronRight, Settings, Shield, Bell } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import styles from './page.module.css';
 
+interface ConfigState {
+  max_daily_loss: number;
+  max_trades: number;
+  ai_active: boolean;
+  orb_active: boolean;
+  vwap_active: boolean;
+  kill_switch: boolean;
+}
+
 export default function ProfilePage() {
-  const [geminiKey, setGeminiKey] = useState('');
+  const [config, setConfig] = useState<ConfigState>({
+    max_daily_loss: 3000,
+    max_trades: 5,
+    ai_active: true,
+    orb_active: true,
+    vwap_active: true,
+    kill_switch: false
+  });
+  
   const [isSaving, setIsSaving] = useState(false);
+  const [geminiKey, setGeminiKey] = useState('');
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://206.189.129.232:8000';
+      const res = await fetch(`${baseUrl}/api/config`);
+      if (res.ok) {
+        const data = await res.json();
+        setConfig(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch config", err);
+    }
+  };
+
+  const saveConfig = async (newConfig: ConfigState) => {
+    setIsSaving(true);
+    setConfig(newConfig); // Optimistic UI update
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://206.189.129.232:8000';
+      await fetch(`${baseUrl}/api/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConfig)
+      });
+    } catch (err) {
+      console.error("Failed to save config", err);
+    }
+    setIsSaving(false);
+  };
+
+  const handleToggle = (key: keyof ConfigState) => {
+    const updated = { ...config, [key]: !config[key] };
+    saveConfig(updated);
+  };
+
+  const handleInputChange = (key: keyof ConfigState, value: string) => {
+    const num = parseInt(value) || 0;
+    setConfig({ ...config, [key]: num });
+  };
+
+  const handleInputBlur = () => {
+    saveConfig(config);
+  };
+
+  const handleKillSwitch = () => {
+    if (window.confirm("EMERGENCY HALT: Are you sure you want to kill all AI trading for today? This cannot be undone from the app.")) {
+      saveConfig({ ...config, kill_switch: true });
+    }
+  };
 
   const handleSaveKey = async () => {
     if (!geminiKey) return;
@@ -33,122 +104,141 @@ export default function ProfilePage() {
   return (
     <div className={styles.pageContainer}>
       
-      {/* Centered Identity Area (No Box) */}
+      {/* Header */}
       <div className={styles.headerSection}>
         <div className={styles.avatarLarge}>
           <span>SJ</span>
         </div>
         <h1>Sarthak Jain</h1>
-        <p>sjain16089@gmail.com</p>
-        <div className={styles.badge}>PRO Plan Active</div>
+        <p>Command Center</p>
+        <div className={styles.badge}>PRO Tier Active</div>
       </div>
 
-      {/* API Connector - iOS Style Grouped List */}
+      {/* API Connections */}
       <div className={styles.sectionGroup}>
-        <span className={styles.sectionTitle}>API & Broker Connections</span>
+        <span className={styles.sectionTitle}>API Connections</span>
         <div className={styles.listGroup}>
           <div className={styles.listItem} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
-              <span className={styles.itemLabel}>Gemini AI Key</span>
-              <span className={styles.itemValue} style={{ color: '#EF4444' }}>Not Connected</span>
+              <span className={styles.listItemLabel}>Gemini AI Key</span>
             </div>
             <div style={{ display: 'flex', width: '100%', gap: '10px' }}>
               <input 
                 type="password" 
                 value={geminiKey}
                 onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder="Paste your paid Gemini API key here..." 
-                style={{
-                  flex: 1,
-                  background: 'rgba(0,0,0,0.2)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  color: 'white',
-                  fontSize: '14px',
-                  outline: 'none'
-                }}
+                placeholder="Paste Gemini API key here..." 
+                className={styles.inputField}
+                style={{ flex: 1, textAlign: 'left', minWidth: 0 }}
               />
               <button 
                 onClick={handleSaveKey}
                 disabled={isSaving || !geminiKey}
-                style={{
-                  background: isSaving || !geminiKey ? 'rgba(59, 130, 246, 0.5)' : '#3B82F6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: isSaving || !geminiKey ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.2s'
-              }}>
-                {isSaving ? 'Saving...' : 'Save'}
+                className={styles.saveButton}
+                style={{ marginTop: 0 }}
+              >
+                Save
               </button>
             </div>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '8px' }}>
-              This key will be securely updated on the server and used to power the AI Copilot and Engine B.
+            <p className={styles.helperText} style={{ marginLeft: 0, marginTop: '8px' }}>
+              Required for Chatbot and NLP features.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Strategy Toggles */}
+      <div className={styles.sectionGroup}>
+        <span className={styles.sectionTitle}>Engine Configuration</span>
+        <div className={styles.listGroup}>
+          <div className={styles.listItem}>
+            <div className={styles.listItemRow}>
+              <span className={styles.listItemLabel}>Machine Learning Oracle</span>
+              <div 
+                className={styles.toggleSwitch} 
+                data-active={config.ai_active}
+                onClick={() => handleToggle('ai_active')}
+              >
+                <div className={styles.toggleKnob} />
+              </div>
+            </div>
+            <p className={styles.helperText} style={{marginLeft: 0, marginTop: '8px'}}>
+              Uses LightGBM predictions to veto low-probability setups.
             </p>
           </div>
           
           <div className={styles.listItem}>
             <div className={styles.listItemRow}>
-              <span className={styles.listItemLabel}>Upstox Broker</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className={styles.itemValue}>Paper Trading Mode</span>
+              <span className={styles.listItemLabel}>Strategy: ORB Breakout</span>
+              <div 
+                className={styles.toggleSwitch} 
+                data-active={config.orb_active}
+                onClick={() => handleToggle('orb_active')}
+              >
+                <div className={styles.toggleKnob} />
+              </div>
+            </div>
+          </div>
+          
+          <div className={styles.listItem}>
+            <div className={styles.listItemRow}>
+              <span className={styles.listItemLabel}>Strategy: VWAP Reversion</span>
+              <div 
+                className={styles.toggleSwitch} 
+                data-active={config.vwap_active}
+                onClick={() => handleToggle('vwap_active')}
+              >
+                <div className={styles.toggleKnob} />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Risk Management Defaults */}
+      {/* Risk Limits */}
       <div className={styles.sectionGroup}>
-        <span className={styles.sectionTitle}>Risk Management</span>
+        <span className={styles.sectionTitle}>Live Risk Limits</span>
         <div className={styles.listGroup}>
           <div className={styles.listItem}>
             <div className={styles.listItemRow}>
-              <span className={styles.listItemLabel}>Max Daily Loss (INR)</span>
+              <span className={styles.listItemLabel}>Max Daily Drawdown (INR)</span>
               <input 
                 type="number" 
                 className={styles.inputField}
-                defaultValue={2000}
-                readOnly
+                value={config.max_daily_loss}
+                onChange={(e) => handleInputChange('max_daily_loss', e.target.value)}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
           <div className={styles.listItem}>
             <div className={styles.listItemRow}>
-              <span className={styles.listItemLabel}>Default Position Size</span>
+              <span className={styles.listItemLabel}>Max Trades Per Day</span>
               <input 
                 type="number" 
                 className={styles.inputField}
-                defaultValue={1}
-                readOnly
+                value={config.max_trades}
+                onChange={(e) => handleInputChange('max_trades', e.target.value)}
+                onBlur={handleInputBlur}
               />
             </div>
           </div>
         </div>
         <p className={styles.helperText}>
-          Risk limits are enforced at the server level via config.py and cannot be modified from the mobile client for security reasons.
+          Changes are synced instantly to the backend MetaAllocator. {isSaving && <span style={{color: 'var(--accent-gold)'}}>Saving...</span>}
         </p>
       </div>
 
-      {/* Help & Support */}
-      <div className={styles.sectionGroup}>
-        <span className={styles.sectionTitle}>Support</span>
-        <a href="#" className={styles.helpLink}>
-          <span>📚 Strategy Walkthroughs</span>
-          <span className={styles.helpLinkChevron}>›</span>
-        </a>
-        <a href="#" className={styles.helpLink}>
-          <span>💬 Contact Support</span>
-          <span className={styles.helpLinkChevron}>›</span>
-        </a>
-        <a href="#" className={styles.helpLink}>
-          <span>📜 Terms of Service</span>
-          <span className={styles.helpLinkChevron}>›</span>
-        </a>
+      {/* Emergency Kill Switch */}
+      <div className={styles.sectionGroup} style={{ marginTop: '16px' }}>
+        <button 
+          className={styles.killButton}
+          onClick={handleKillSwitch}
+          disabled={config.kill_switch}
+          style={{ opacity: config.kill_switch ? 0.5 : 1, cursor: config.kill_switch ? 'not-allowed' : 'pointer' }}
+        >
+          {config.kill_switch ? 'Engine Halted for Today' : 'Emergency Halt Engine'}
+        </button>
       </div>
       
     </div>

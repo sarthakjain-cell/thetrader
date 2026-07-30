@@ -26,10 +26,12 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'scanner' | 'charts' | 'portfolio' | 'news'>('home');
   const [selectedChartSymbol, setSelectedChartSymbol] = useState<string | null>(null);
   const [selectedInsightSymbol, setSelectedInsightSymbol] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     handleResize();
+    setMounted(true);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -48,6 +50,10 @@ export default function Home() {
   }) || [];
 
   const activeSymbol = selectedChartSymbol || (state.positions.length > 0 ? state.positions[0].symbol : 'RELIANCE.NS');
+
+  if (!mounted) {
+    return <div style={{ width: '100vw', height: '100vh', backgroundColor: 'var(--bg-root)' }}></div>;
+  }
 
   return (
     <>

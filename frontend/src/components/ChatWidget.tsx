@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -72,6 +74,19 @@ export const ChatWidget: React.FC = () => {
 
   return (
     <>
+      <style>{`
+        .markdown-body p { margin-bottom: 8px; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body strong { font-weight: 600; color: #60A5FA; }
+        .markdown-body em { font-style: italic; }
+        .markdown-body ul { padding-left: 20px; margin-bottom: 8px; list-style-type: disc; }
+        .markdown-body ol { padding-left: 20px; margin-bottom: 8px; list-style-type: decimal; }
+        .markdown-body li { margin-bottom: 4px; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 600; margin-bottom: 8px; margin-top: 12px; }
+        .markdown-body code { background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+        .markdown-body pre { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; overflow-x: auto; margin-bottom: 8px; }
+        .markdown-body pre code { background: transparent; padding: 0; }
+      `}</style>
       {isOpen ? (
         <div style={{
           position: 'fixed', 
@@ -116,15 +131,23 @@ export const ChatWidget: React.FC = () => {
             {messages.map((msg) => (
               <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start' }}>
                 <div style={{
-                  maxWidth: '80%',
+                  maxWidth: '85%',
                   padding: '10px 14px',
                   borderRadius: msg.sender === 'user' ? '16px 16px 0 16px' : '16px 16px 16px 0',
                   backgroundColor: msg.sender === 'user' ? '#3B82F6' : 'rgba(255, 255, 255, 0.05)',
                   color: '#fff',
                   fontSize: '14px',
-                  lineHeight: '1.5'
+                  lineHeight: '1.6'
                 }}>
-                  {msg.text}
+                  {msg.sender === 'user' ? (
+                    msg.text
+                  ) : (
+                    <div className="markdown-body">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.text}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

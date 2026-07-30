@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 import { AlertProvider } from '../contexts/AlertContext';
 import { NativeAppShell } from '../components/NativeAppShell';
 import { ChatWidget } from '../components/ChatWidget';
+import { SplashHider } from '../components/SplashHider';
 
 export default function RootLayout({
   children,
@@ -25,6 +26,7 @@ export default function RootLayout({
           <AlertProvider>
             {children}
             <ChatWidget />
+            <SplashHider />
           </AlertProvider>
         </NativeAppShell>
       </body>
