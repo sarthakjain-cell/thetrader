@@ -49,7 +49,7 @@ def generate_eod_report():
     if not positions_df.empty:
         message += f"**Active Positions ({len(positions_df)}):**\n"
         for _, row in positions_df.iterrows():
-            message += f"- {row['symbol']} ({row['side']}) @ ₹{row['entry_price']}\n"
+            message += f"- {row['symbol']} (Qty: {row['qty']}) @ ₹{row['entry_price']}\n"
             
     send_discord_alert(message, f"📊 AI End-Of-Day Report ({today_str})", color)
     print("EOD Report sent to Discord.")

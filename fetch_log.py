@@ -9,16 +9,19 @@ try:
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(IP, username=USER, password=PASS, timeout=10)
     
-    stdin, stdout, stderr = ssh.exec_command("cat /root/.pm2/logs/algotrade-api-error.log | tail -n 10")
-    errs = stdout.read().decode('utf-8', errors='ignore')
+    stdin, stdout, stderr = ssh.exec_command("pm2 list")
+    pm2_list = stdout.read().decode('utf-8', errors='ignore')
     
-    stdin, stdout, stderr = ssh.exec_command("cat /root/.pm2/logs/algotrade-api-out.log | tail -n 5")
-    outs = stdout.read().decode('utf-8', errors='ignore')
+    stdin, stdout, stderr = ssh.exec_command("pm2 logs --lines 15 --nostream")
+    pm2_logs = stdout.read().decode('utf-8', errors='ignore')
     
-    print("ERRORS:")
-    print(errs)
-    print("OUTPUTS:")
-    print(outs)
+    with open('temp_log.txt', 'w', encoding='utf-8') as f:
+        f.write("=== PM2 STATUS ===\n")
+        f.write(pm2_list)
+        f.write("\n=== RECENT PM2 LOGS ===\n")
+        f.write(pm2_logs)
+        
+    print("Logs written to temp_log.txt")
     
     ssh.close()
 except Exception as e:

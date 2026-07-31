@@ -9,6 +9,9 @@ def compute_features(df: pd.DataFrame) -> pd.DataFrame:
     The data should be in chronological order.
     Returns a copy of the dataframe with new feature columns.
     """
+    if len(df) < 30:
+        return df
+
     df = df.copy()
     
     # 1. EMAs

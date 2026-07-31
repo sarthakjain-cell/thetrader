@@ -6,6 +6,12 @@ class Strategy002VWAP(BaseStrategy):
     def __init__(self):
         super().__init__("S002_VWAP", "VWAP Mean Reversion")
         
+    def get_default_parameters(self) -> dict:
+        return {
+            'vwap_dip_threshold': -0.01,
+            'stop_loss_pct': 0.99
+        }
+        
     def evaluate(self, symbol: str, current_bar: pd.Series, context: dict) -> dict:
         signal_dict = {"signal": "HOLD", "reason": "", "stop_loss": None, "target": None, "conviction": 0.5}
         
@@ -20,10 +26,12 @@ class Strategy002VWAP(BaseStrategy):
         # If price drops below VWAP by 0.5% and then closes above it? Or just mean reversion if it dips way below
         dist_from_vwap = (price - current_vwap) / current_vwap
         
-        if dist_from_vwap < -0.01: # 1% below VWAP
+        dip_threshold = self.params['vwap_dip_threshold']
+        
+        if dist_from_vwap < dip_threshold: # dip below VWAP
             signal_dict["signal"] = "BUY"
-            signal_dict["reason"] = f"Price ({price:.2f}) is >1% below VWAP ({current_vwap:.2f}). Reversion expected."
-            signal_dict["stop_loss"] = price * 0.99 # 1% stop
+            signal_dict["reason"] = f"Price ({price:.2f}) is dipped {dist_from_vwap*100:.2f}% below VWAP ({current_vwap:.2f})."
+            signal_dict["stop_loss"] = price * self.params['stop_loss_pct']
             signal_dict["target"] = current_vwap # Target is VWAP
             signal_dict["conviction"] = 0.6
         else:

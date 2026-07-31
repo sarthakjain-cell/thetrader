@@ -1,4 +1,6 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 
 interface Trade {
@@ -80,14 +82,18 @@ export default function TradeExplanationModal({ trade, onClose }: Props) {
               fontFamily: 'monospace',
               fontSize: '0.9rem'
             }}>
-              {trade.notes || "Standard execution parameters met. No specific macro notes recorded."}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {trade.notes || "Standard execution parameters met. No specific macro notes recorded."}
+              </ReactMarkdown>
             </div>
           </div>
           
           <div style={{ marginTop: '1.5rem' }}>
             <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: '0.5rem', color: 'var(--accent-primary)' }}>Exit Trigger</h3>
-            <p style={{ textTransform: 'capitalize', color: 'var(--text-muted)' }}>
-              {trade.reason.replace('_', ' ')}
+            <p style={{ color: 'var(--text-muted)' }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {trade.reason.replace(/_/g, ' ')}
+              </ReactMarkdown>
             </p>
           </div>
         </div>

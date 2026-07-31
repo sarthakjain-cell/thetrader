@@ -16,6 +16,8 @@ import { useAlerts } from '../contexts/AlertContext';
 import { AlertLog } from '../components/AlertLog';
 import { StockInsightsModal } from '../components/StockInsightsModal';
 import { ProfileDropdown } from '../components/ProfileDropdown';
+import TradeExplanationModal from '../components/TradeExplanationModal';
+import { Trade } from '../types';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -26,6 +28,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'scanner' | 'charts' | 'portfolio' | 'news'>('home');
   const [selectedChartSymbol, setSelectedChartSymbol] = useState<string | null>(null);
   const [selectedInsightSymbol, setSelectedInsightSymbol] = useState<string | null>(null);
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -106,9 +109,11 @@ export default function Home() {
                 <div className={styles.mobileTab}>
                   <AIPortfolio 
                     positions={state.positions} 
+                    trades={state.today_trades}
                     account={state.account} 
                     strategies={state.strategies} 
                     onPositionClick={(sym) => { setSelectedChartSymbol(sym); setActiveTab('charts'); }}
+                    onTradeClick={(trade) => setSelectedTrade(trade)}
                   />
                 </div>
               )}
@@ -132,9 +137,11 @@ export default function Home() {
                   <CategoryScroll title="Top AI Buys" signals={marketSignals} onStockClick={setSelectedInsightSymbol} />
                   <AIPortfolio 
                     positions={state.positions} 
+                    trades={state.today_trades}
                     account={state.account} 
                     strategies={state.strategies}
                     onPositionClick={(sym) => setSelectedChartSymbol(sym)}
+                    onTradeClick={(trade) => setSelectedTrade(trade)}
                   />
                 </div>
               </Panel>
@@ -164,6 +171,10 @@ export default function Home() {
           trend={marketSignals.find(s => s.symbol === selectedInsightSymbol)?.trend || 'Neutral'}
           onClose={() => setSelectedInsightSymbol(null)} 
         />
+      )}
+
+      {selectedTrade && (
+        <TradeExplanationModal trade={selectedTrade} onClose={() => setSelectedTrade(null)} />
       )}
 
       {isMobile && (

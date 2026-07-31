@@ -1,4 +1,6 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ResearchTip } from '../types';
 import styles from './ResearchDesk.module.css';
 
@@ -25,7 +27,9 @@ export const ResearchDesk: React.FC<Props> = ({ tips }) => {
               </div>
               
               <div className={styles.rationale}>
-                {tip.rationale}
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {tip.rationale}
+                </ReactMarkdown>
               </div>
               
               <div className={styles.scoreContainer}>

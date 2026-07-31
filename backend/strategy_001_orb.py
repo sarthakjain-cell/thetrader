@@ -5,6 +5,13 @@ class Strategy001ORB(BaseStrategy):
     def __init__(self):
         super().__init__("S001_ORB", "AI Open Range Breakout")
         
+    def get_default_parameters(self) -> dict:
+        return {
+            'stop_loss_atr_mult': 1.0,
+            'target_atr_mult': 2.0,
+            'min_ml_prob': 0.55
+        }
+        
     def evaluate(self, symbol: str, current_bar: pd.Series, context: dict) -> dict:
         signal_dict = {"signal": "HOLD", "reason": "", "stop_loss": None, "target": None, "conviction": 0.5}
         
@@ -22,8 +29,8 @@ class Strategy001ORB(BaseStrategy):
         if price > orb_high:
             atr = current_bar.get('ATR_14', price * 0.005)
                 
-            stop_loss = price - (atr * 1.0)
-            target = price + (atr * 2.0)
+            stop_loss = price - (atr * self.params['stop_loss_atr_mult'])
+            target = price + (atr * self.params['target_atr_mult'])
             
             # Check Sentiment Veto
             sentiment = context.get('sentiment', {}).get(symbol, 0)
@@ -39,8 +46,9 @@ class Strategy001ORB(BaseStrategy):
             # Check ML Oracle Probability
             ml_prob = context.get('ai_forecasts', {}).get(symbol, 0.5)
             
-            if ml_prob < 0.55:
-                signal_dict["reason"] = f"VETO: AI predicts ORB failure ({ml_prob:.2f} < 0.55)"
+            min_prob = self.params['min_ml_prob']
+            if ml_prob < min_prob:
+                signal_dict["reason"] = f"VETO: AI predicts ORB failure ({ml_prob:.2f} < {min_prob})"
                 return signal_dict
                 
             signal_dict["signal"] = "BUY"

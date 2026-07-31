@@ -135,6 +135,26 @@ class MultiStrategyEngine:
                     log.error(f"Failed to load dynamic strategy {row['strategy_id']}: {e}")
         except Exception as e:
             log.warning(f"Could not load generated strategies: {e}")
+            
+        # Load Optimized Parameters
+        try:
+            import json
+            df_params = pd.read_sql("SELECT key, value FROM model_config", conn)
+            param_dict = dict(zip(df_params['key'], df_params['value']))
+            
+            for strat in self.strategies:
+                key = f"RELIANCE.NS_{strat.strategy_id}_params"
+                if key in param_dict:
+                    try:
+                        p = json.loads(param_dict[key])
+                        if hasattr(strat, 'set_parameters'):
+                            strat.set_parameters(p)
+                            log.info(f"[{strat.strategy_id}] Loaded optimized params.")
+                    except:
+                        pass
+        except Exception as e:
+            log.warning(f"Could not load optimized parameters: {e}")
+            
         finally:
             conn.close()
             
@@ -243,7 +263,18 @@ class MultiStrategyEngine:
                 if not pos.empty:
                     # Manage existing position
                     p = pos.iloc[0]
-                    res = strategy.manage_position(sym, p.to_dict(), current_bar)
+                    
+                    if now.time() >= dtime(15, 15):
+                        # Strict 15:15 Auto Squareoff
+                        res = {"action": "CLOSE", "reason": "15:15 Auto-Squareoff", "exit_price": current_bar['Close']}
+                    else:
+                        res = strategy.manage_position(sym, p.to_dict(), current_bar)
+                        
+                        # Generic Trailing Stop (Trail to breakeven if up 1.5%)
+                        if res.get("action") == "HOLD" and current_bar['Close'] >= p['entry_price'] * 1.015:
+                            new_sl = p['entry_price'] * 1.002 # Breakeven + small buffer
+                            if new_sl > p['stop_loss']:
+                                res = {"action": "UPDATE_STOP", "new_stop": new_sl}
                     
                     if res.get("action") == "UPDATE_STOP":
                         new_stop = res["new_stop"]

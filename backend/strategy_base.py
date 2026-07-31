@@ -5,6 +5,15 @@ class BaseStrategy(ABC):
     def __init__(self, strategy_id: str, name: str):
         self.strategy_id = strategy_id
         self.name = name
+        self.params = self.get_default_parameters()
+
+    def get_default_parameters(self) -> dict:
+        """Override this to return default parameters for optimization."""
+        return {}
+        
+    def set_parameters(self, params: dict):
+        """Inject optimized parameters into the strategy."""
+        self.params.update(params)
 
     @abstractmethod
     def evaluate(self, symbol: str, current_bar: pd.Series, context: dict) -> dict:

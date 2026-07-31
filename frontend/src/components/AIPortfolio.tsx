@@ -13,6 +13,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { Trade } from '../types';
 
 ChartJS.register(
   CategoryScale,
@@ -36,13 +37,16 @@ interface Position {
 
 interface AIPortfolioProps {
   positions: Position[];
+  trades?: Trade[];
   account: any;
   strategies?: StrategyPerformance[];
   onPositionClick?: (symbol: string) => void;
+  onTradeClick?: (trade: Trade) => void;
 }
 
-export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, account, strategies = [], onPositionClick }) => {
+export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, trades = [], account, strategies = [], onPositionClick, onTradeClick }) => {
   const [equityData, setEquityData] = useState<{ time: string; equity: number }[]>([]);
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'POSITIONS' | 'HISTORY'>('OVERVIEW');
   const [viewType, setViewType] = useState<'INTRADAY' | 'DELIVERY'>('INTRADAY');
   
   const filteredPositions = positions.filter(p => (p.trade_type || 'INTRADAY') === viewType);
@@ -168,12 +172,35 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, account, st
         </div>
       </div>
 
-      <div className={styles.sectionTitle} style={{ marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <span>Account Equity Curve</span>
-        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'normal', letterSpacing: '0px' }}>
-          Visualizes total portfolio balance over time, reflecting realized profits and live paper trading drawdowns.
-        </span>
+      <div className={styles.toggleContainer}>
+        <button 
+          className={`${styles.toggleBtn} ${activeTab === 'OVERVIEW' ? styles.active : ''}`}
+          onClick={() => setActiveTab('OVERVIEW')}
+        >
+          OVERVIEW
+        </button>
+        <button 
+          className={`${styles.toggleBtn} ${activeTab === 'POSITIONS' ? styles.active : ''}`}
+          onClick={() => setActiveTab('POSITIONS')}
+        >
+          OPEN POSITIONS
+        </button>
+        <button 
+          className={`${styles.toggleBtn} ${activeTab === 'HISTORY' ? styles.active : ''}`}
+          onClick={() => setActiveTab('HISTORY')}
+        >
+          TRADE HISTORY
+        </button>
       </div>
+
+      {activeTab === 'OVERVIEW' && (
+        <>
+          <div className={styles.sectionTitle} style={{ marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <span>Account Equity Curve</span>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'normal', letterSpacing: '0px' }}>
+              Visualizes total portfolio balance over time, reflecting realized profits and live paper trading drawdowns.
+            </span>
+          </div>
 
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
@@ -245,67 +272,115 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, account, st
           ))
         )}
       </motion.div>
+        </>
+      )}
 
-      <div className={styles.sectionTitle} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        Live Paper Positions
-      </div>
-      
-      <div className={styles.toggleContainer}>
-        <button 
-          className={`${styles.toggleBtn} ${viewType === 'INTRADAY' ? styles.active : ''}`}
-          onClick={() => setViewType('INTRADAY')}
-        >
-          INTRADAY
-        </button>
-        <button 
-          className={`${styles.toggleBtn} ${viewType === 'DELIVERY' ? styles.active : ''}`}
-          onClick={() => setViewType('DELIVERY')}
-        >
-          HOLDINGS
-        </button>
-      </div>
+      {activeTab === 'POSITIONS' && (
+        <>
+          <div className={styles.toggleContainer} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <button 
+              className={`${styles.toggleBtn} ${viewType === 'INTRADAY' ? styles.active : ''}`}
+              onClick={() => setViewType('INTRADAY')}
+            >
+              INTRADAY
+            </button>
+            <button 
+              className={`${styles.toggleBtn} ${viewType === 'DELIVERY' ? styles.active : ''}`}
+              onClick={() => setViewType('DELIVERY')}
+            >
+              HOLDINGS
+            </button>
+          </div>
 
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.listContainer}>
-        {filteredPositions.length === 0 ? (
-          <motion.div variants={itemVariants} className={styles.emptyState}>
-            <div className={styles.boxIcon}>🔭</div>
-            <div className={styles.emptyTitle}>Scanning Market...</div>
-            <div className={styles.emptyDesc}>The AI is waiting for the perfect entry criteria across all active strategies.</div>
-          </motion.div>
-        ) : (
-          filteredPositions.map(p => {
-            const currentPrice = p.current_price || p.entry_price;
-            const uPnl = p.unrealized_pnl || 0;
-            const pnlPositive = uPnl >= 0;
-            const pnlColorClass = pnlPositive ? styles.positive : styles.negative;
-            const pnlArrow = pnlPositive ? '↑' : '↓';
-
-            return (
-              <motion.div 
-                variants={itemVariants} 
-                key={p.symbol} 
-                className={styles.row}
-                onClick={() => onPositionClick && onPositionClick(p.symbol)}
-                style={{ cursor: onPositionClick ? 'pointer' : 'default' }}
-              >
-                <div className={styles.leftCol}>
-                  <div className={styles.symbol}>{p.symbol.split('.')[0]}</div>
-                  <div className={styles.qtyInfo}>
-                    {p.qty} Qty • Avg ₹{p.entry_price.toFixed(2)}
-                    {p.strategy_id && <span className={styles.stratTag}>{p.strategy_id}</span>}
-                  </div>
-                </div>
-                <div className={styles.rightCol}>
-                  <div className={styles.ltp}>₹{currentPrice.toFixed(2)}</div>
-                  <div className={`${styles.change} ${pnlColorClass}`}>
-                    {pnlArrow} ₹{Math.abs(uPnl).toFixed(2)}
-                  </div>
-                </div>
+          <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.listContainer}>
+            {filteredPositions.length === 0 ? (
+              <motion.div variants={itemVariants} className={styles.emptyState}>
+                <div className={styles.boxIcon}>🔭</div>
+                <div className={styles.emptyTitle}>No Active Trades</div>
+                <div className={styles.emptyDesc}>The portfolio is flat. The AI engines are actively scanning the live market for the next entry criteria.</div>
               </motion.div>
-            );
-          })
-        )}
-      </motion.div>
+            ) : (
+              filteredPositions.map(p => {
+                const currentPrice = p.current_price || p.entry_price;
+                const uPnl = p.unrealized_pnl || 0;
+                const pnlPositive = uPnl >= 0;
+                const pnlColorClass = pnlPositive ? styles.positive : styles.negative;
+                const pnlArrow = pnlPositive ? '↑' : '↓';
+
+                return (
+                  <motion.div 
+                    variants={itemVariants} 
+                    key={p.symbol} 
+                    className={styles.row}
+                    onClick={() => onPositionClick && onPositionClick(p.symbol)}
+                    style={{ cursor: onPositionClick ? 'pointer' : 'default', marginTop: '8px' }}
+                  >
+                    <div className={styles.leftCol}>
+                      <div className={styles.symbol}>{p.symbol.split('.')[0]}</div>
+                      <div className={styles.qtyInfo}>
+                        {p.qty} Qty • Avg ₹{p.entry_price.toFixed(2)}
+                        {p.strategy_id && <span className={styles.stratTag}>{p.strategy_id}</span>}
+                      </div>
+                    </div>
+                    <div className={styles.rightCol}>
+                      <div className={styles.ltp}>₹{currentPrice.toFixed(2)}</div>
+                      <div className={`${styles.change} ${pnlColorClass}`}>
+                        {pnlArrow} ₹{Math.abs(uPnl).toFixed(2)}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </motion.div>
+        </>
+      )}
+
+      {activeTab === 'HISTORY' && (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.listContainer}>
+          {trades.length === 0 ? (
+            <motion.div variants={itemVariants} className={styles.emptyState}>
+              <div className={styles.boxIcon}>📊</div>
+              <div className={styles.emptyTitle}>No Completed Trades</div>
+              <div className={styles.emptyDesc}>The AI has not closed any positions today.</div>
+            </motion.div>
+          ) : (
+            trades.map((t, idx) => {
+              const pnlPositive = t.pnl >= 0;
+              const pnlColorClass = pnlPositive ? styles.positive : styles.negative;
+              const pnlArrow = pnlPositive ? '↑' : '↓';
+
+              return (
+                <motion.div 
+                  variants={itemVariants} 
+                  key={`${t.symbol}-${idx}`} 
+                  className={styles.row}
+                  onClick={() => onTradeClick && onTradeClick(t)}
+                  style={{ cursor: onTradeClick ? 'pointer' : 'default', marginTop: '8px' }}
+                >
+                  <div className={styles.leftCol}>
+                    <div className={styles.symbol}>{t.symbol.split('.')[0]}</div>
+                    <div className={styles.qtyInfo} style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>
+                      In: {t.entry_time} 
+                      <br/>
+                      Out: {t.exit_time}
+                    </div>
+                    <div className={styles.qtyInfo} style={{ marginTop: '4px' }}>
+                      Buy: ₹{t.entry_price.toFixed(2)} • Sell: ₹{t.exit_price.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className={styles.rightCol}>
+                    <div className={styles.ltp}>Realized</div>
+                    <div className={`${styles.change} ${pnlColorClass}`}>
+                      {pnlArrow} ₹{Math.abs(t.pnl).toFixed(2)}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </motion.div>
+      )}
     </div>
   );
 };
