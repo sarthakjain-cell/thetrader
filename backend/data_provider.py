@@ -35,63 +35,71 @@ class DataProvider(ABC):
         """Returns a dict of symbol -> 5m candles DataFrame for the current trading day."""
         pass
 
-class YFinanceProvider(DataProvider):
-    def get_today_data(self, symbols: list) -> dict:
+class TradingViewProvider(DataProvider):
+    def __init__(self):
         try:
-            import requests
-            session = requests.Session()
-            tickers_str = " ".join(symbols)
-            log.info(f"Batch downloading {len(symbols)} symbols...")
+            from tvDatafeed import TvDatafeed
+            # Initialize without login for free public data
+            self.tv = TvDatafeed()
+        except Exception as e:
+            log.error(f"Failed to initialize TradingView: {e}")
+            self.tv = None
             
-            # Fetch last 2 days just to be safe with timezone boundaries
-            df_raw = yf.download(tickers=tickers_str, period="2d", interval="5m", group_by="ticker", progress=False, session=session)
+    def get_today_data(self, symbols: list) -> dict:
+        if not self.tv:
+            log.error("TradingView not initialized.")
+            return {}
             
-            # Force close the session to free TCP sockets and RAM
-            session.close()
-            
-            if df_raw.empty:
-                return {}
-                
+        try:
+            from tvDatafeed import Interval
             data_dict = {}
             today = pd.Timestamp.now('Asia/Kolkata').date()
             
+            log.info(f"Downloading {len(symbols)} symbols from TradingView...")
+            
             for sym in symbols:
-                if len(symbols) == 1:
-                    df = df_raw.copy()
-                else:
-                    try:
-                        df = df_raw[sym].copy()
-                    except KeyError:
+                try:
+                    # Remove .NS for TradingView symbol, and specify NSE exchange
+                    tv_sym = sym.replace('.NS', '')
+                    # Fetch ~100 bars to ensure we have the full current day
+                    df = self.tv.get_hist(symbol=tv_sym, exchange='NSE', interval=Interval.in_5_minute, n_bars=100)
+                    
+                    if df is None or df.empty:
                         continue
                         
-                df = df.dropna(how='all')
-                if df.empty:
-                    continue
+                    # tvDatafeed returns index as datetime, columns: symbol, open, high, low, close, volume
+                    df.reset_index(inplace=True)
+                    df.rename(columns={
+                        'datetime': 'Datetime',
+                        'open': 'Open',
+                        'high': 'High',
+                        'low': 'Low',
+                        'close': 'Close',
+                        'volume': 'Volume'
+                    }, inplace=True)
                     
-                df.reset_index(inplace=True)
-                if 'Datetime' not in df.columns and 'Date' in df.columns:
-                    df.rename(columns={'Date': 'Datetime'}, inplace=True)
+                    # Convert timezone to naive
+                    if df['Datetime'].dt.tz is not None:
+                        df['Datetime'] = df['Datetime'].dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
+                        
+                    # Filter for today only
+                    df = df[df['Datetime'].dt.date == today].copy()
                     
-                # Convert to naive datetime for consistency if it's tz-aware
-                if df['Datetime'].dt.tz is not None:
-                    df['Datetime'] = df['Datetime'].dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
+                    if df.empty:
+                        continue
+                        
+                    df['Symbol'] = sym # Restore original .NS symbol for the rest of our engine
+                    df = df[['Datetime', 'Symbol', 'Open', 'High', 'Low', 'Close', 'Volume']]
                     
-                # Filter for today only
-                df = df[df['Datetime'].dt.date == today].copy()
-                
-                if df.empty:
-                    continue
+                    # Save to DB for charting
+                    save_bars_to_db(df)
                     
-                df['Symbol'] = sym
-                df = df[['Datetime', 'Symbol', 'Open', 'High', 'Low', 'Close', 'Volume']]
-                
-                # Save fetched bars to DB for frontend charting
-                save_bars_to_db(df)
-                
-                data_dict[sym] = df
-                
+                    data_dict[sym] = df
+                except Exception as e:
+                    log.error(f"Failed to fetch {sym} from TV: {e}")
+                    
             return data_dict
         except Exception as e:
-            log.error(f"Error fetching YFinance batched data: {e}")
+            log.error(f"Fatal error in TradingViewProvider: {e}")
             return {}
 

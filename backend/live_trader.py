@@ -6,7 +6,7 @@ import gc
 from datetime import datetime, time as dtime
 from zoneinfo import ZoneInfo
 from logger import log
-from data_provider import YFinanceProvider
+from data_provider import TradingViewProvider
 from feature_engine import compute_features
 
 from strategy_001_orb import Strategy001ORB
@@ -107,7 +107,7 @@ class MetaAllocator:
 
 class MultiStrategyEngine:
     def __init__(self):
-        self.provider = YFinanceProvider()
+        self.provider = TradingViewProvider()
         # Load Hardcoded strategies
         self.strategies = [
             Strategy001ORB(),
