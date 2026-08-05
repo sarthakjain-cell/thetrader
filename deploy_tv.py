@@ -24,6 +24,10 @@ try:
     local_live_trader = os.path.join("backend", "live_trader.py")
     sftp.put(local_live_trader, '/root/backend/live_trader.py')
     
+    print("Uploading feature_engine.py...")
+    local_feature = os.path.join("backend", "feature_engine.py")
+    sftp.put(local_feature, '/root/backend/feature_engine.py')
+    
     sftp.close()
     
     print("Restarting engine...")

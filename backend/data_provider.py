@@ -78,8 +78,10 @@ class TradingViewProvider(DataProvider):
                         'volume': 'Volume'
                     }, inplace=True)
                     
-                    # Convert timezone to naive
-                    if df['Datetime'].dt.tz is not None:
+                    # tvDatafeed returns naive UTC datetimes. We need to localize them to UTC and then convert to IST.
+                    if df['Datetime'].dt.tz is None:
+                        df['Datetime'] = df['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
+                    else:
                         df['Datetime'] = df['Datetime'].dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
                         
                     # Filter for today only

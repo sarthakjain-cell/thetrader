@@ -121,20 +121,20 @@ class MultiStrategyEngine:
         
         # Load Generated Strategies
         conn = self._get_db()
-        try:
-            from dynamic_strategy import DynamicStrategy
-            import json
-            
-            df = pd.read_sql("SELECT strategy_id, config_json FROM generated_strategies", conn)
-            for _, row in df.iterrows():
-                try:
-                    dyn_strat = DynamicStrategy(row['config_json'])
-                    self.strategies.append(dyn_strat)
-                    log.info(f"Loaded Dynamic Strategy: {row['strategy_id']}")
-                except Exception as e:
-                    log.error(f"Failed to load dynamic strategy {row['strategy_id']}: {e}")
-        except Exception as e:
-            log.warning(f"Could not load generated strategies: {e}")
+        # try:
+        #     from dynamic_strategy import DynamicStrategy
+        #     import json
+        #     
+        #     df = pd.read_sql("SELECT strategy_id, config_json FROM generated_strategies", conn)
+        #     for _, row in df.iterrows():
+        #         try:
+        #             dyn_strat = DynamicStrategy(row['config_json'])
+        #             self.strategies.append(dyn_strat)
+        #             log.info(f"Loaded Dynamic Strategy: {row['strategy_id']}")
+        #         except Exception as e:
+        #             log.error(f"Failed to load dynamic strategy {row['strategy_id']}: {e}")
+        # except Exception as e:
+        #     log.warning(f"Could not load generated strategies: {e}")
             
         # Load Optimized Parameters
         try:

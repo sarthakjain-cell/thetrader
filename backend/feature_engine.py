@@ -9,8 +9,7 @@ def compute_features(df: pd.DataFrame) -> pd.DataFrame:
     The data should be in chronological order.
     Returns a copy of the dataframe with new feature columns.
     """
-    if len(df) < 30:
-        return df
+    # We removed the early exit constraint to allow features to compute even on the first candle of the day.
 
     df = df.copy()
     
