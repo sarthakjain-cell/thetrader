@@ -7,7 +7,8 @@ module.exports = {
       interpreter: "none",
       autorestart: true,
       watch: false,
-      max_memory_restart: '1G'
+      max_memory_restart: '1G',
+      exp_backoff_restart_delay: 100
     },
     {
       name: "engine-a-technical",
@@ -16,7 +17,8 @@ module.exports = {
       interpreter: "none",
       autorestart: true,
       watch: false,
-      max_memory_restart: '500M'
+      max_memory_restart: '500M',
+      exp_backoff_restart_delay: 100
     },
     {
       name: "engine-b-sentiment",
@@ -25,7 +27,8 @@ module.exports = {
       interpreter: "none",
       autorestart: true,
       watch: false,
-      max_memory_restart: '1500M' // FinBERT needs memory
+      max_memory_restart: '1500M', // FinBERT needs memory
+      exp_backoff_restart_delay: 100
     },
     {
       name: "ai-brain-daemon",
@@ -34,7 +37,8 @@ module.exports = {
       interpreter: "none",
       autorestart: true,
       watch: false,
-      max_memory_restart: '300M'
+      max_memory_restart: '300M',
+      exp_backoff_restart_delay: 100
     },
     {
       name: "ultimate-scraper",

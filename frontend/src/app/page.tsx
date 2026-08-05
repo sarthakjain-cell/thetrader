@@ -7,6 +7,7 @@ import { CommandPalette } from '../components/CommandPalette';
 import { MarketPulse } from '../components/MarketPulse';
 import { CategoryScroll } from '../components/CategoryScroll';
 import { AIPortfolio } from '../components/AIPortfolio';
+import { StrategiesLeaderboard } from '../components/StrategiesLeaderboard';
 import { NewsHub } from '../components/NewsHub';
 import { TradingChart } from '../components/TradingChart';
 import { KillBanner } from '../components/KillBanner';
@@ -115,6 +116,7 @@ export default function Home() {
                     onPositionClick={(sym) => { setSelectedChartSymbol(sym); setActiveTab('charts'); }}
                     onTradeClick={(trade) => setSelectedTrade(trade)}
                   />
+                  <StrategiesLeaderboard strategies={state.strategies} />
                 </div>
               )}
               {activeTab === 'charts' && (
@@ -143,6 +145,7 @@ export default function Home() {
                     onPositionClick={(sym) => setSelectedChartSymbol(sym)}
                     onTradeClick={(trade) => setSelectedTrade(trade)}
                   />
+                  <StrategiesLeaderboard strategies={state.strategies} />
                 </div>
               </Panel>
               <PanelResizeHandle className={styles.resizeHandle} />

@@ -9,10 +9,11 @@ try:
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(IP, username=USER, password=PASS, timeout=10)
     
-    stdin, stdout, stderr = ssh.exec_command("grep '09:15:' /root/.pm2/logs/engine-a-technical-out.log | head -n 30")
-    print("--- 09:15 LOGS ---")
-    print(stdout.read().decode('utf-8'))
-    
+    sftp = ssh.open_sftp()
+    with sftp.open('/root/backend/feature_engine.py', 'r') as f:
+        content = f.read().decode('utf-8')
+        print(content[:1500])
+    sftp.close()
     ssh.close()
 except Exception as e:
     print(f"Error: {e}")

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAlerts } from '../contexts/AlertContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bell, BellRing, Inbox } from 'lucide-react';
 
 export const AlertLog: React.FC = () => {
   const { alerts, clearAlerts } = useAlerts();
@@ -25,7 +26,7 @@ export const AlertLog: React.FC = () => {
           position: 'relative'
         }}
       >
-        <span style={{ fontSize: '1.2rem' }}>🔔</span>
+        <Bell size={20} color={alerts.length > 0 ? "var(--text-primary)" : "var(--text-muted)"} />
         {alerts.length > 0 && (
           <span style={{ 
             position: 'absolute',
@@ -121,7 +122,7 @@ export const AlertLog: React.FC = () => {
                     justifyContent: 'center',
                     color: 'rgba(255,255,255,0.3)'
                   }}>
-                    <span style={{ fontSize: '3rem', marginBottom: '16px' }}>📭</span>
+                    <Inbox size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
                     <p style={{ margin: 0, fontSize: '1.1rem' }}>No new notifications</p>
                     <p style={{ margin: '8px 0 0 0', fontSize: '0.85rem', textAlign: 'center' }}>
                       When the AI executes a trade, it will appear here.

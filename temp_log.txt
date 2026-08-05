@@ -2,34 +2,34 @@
 ┌────┬───────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
 │ id │ name                  │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
 ├────┼───────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
-│ 3  │ ai-brain-daemon       │ default     │ 1.0.0   │ fork    │ 29698    │ 20s    │ 0    │ online    │ 0%       │ 20.1mb   │ root     │ disabled │
-│ 0  │ algotrade-api         │ default     │ 1.0.0   │ fork    │ 29695    │ 20s    │ 0    │ online    │ 0%       │ 182.4mb  │ root     │ disabled │
+│ 3  │ ai-brain-daemon       │ default     │ 1.0.0   │ fork    │ 1857033  │ 10s    │ 3    │ online    │ 0%       │ 20.4mb   │ root     │ disabled │
+│ 0  │ algotrade-api         │ default     │ 1.0.0   │ fork    │ 1856596  │ 5m     │ 17   │ online    │ 0%       │ 208.1mb  │ root     │ disabled │
 │ 5  │ daily-reporter        │ default     │ 1.0.0   │ fork    │ 0        │ 0      │ 0    │ stopped   │ 0%       │ 0b       │ root     │ disabled │
-│ 1  │ engine-a-technical    │ default     │ 1.0.0   │ fork    │ 29696    │ 20s    │ 0    │ online    │ 0%       │ 136.1mb  │ root     │ disabled │
-│ 2  │ engine-b-sentiment    │ default     │ 1.0.0   │ fork    │ 29697    │ 20s    │ 0    │ online    │ 0%       │ 156.0mb  │ root     │ disabled │
+│ 1  │ engine-a-technical    │ default     │ 1.0.0   │ fork    │ 1856593  │ 5m     │ 4    │ online    │ 0%       │ 129.4mb  │ root     │ disabled │
+│ 2  │ engine-b-sentiment    │ default     │ 1.0.0   │ fork    │ 1857036  │ 3s     │ 59   │ online    │ 0%       │ 175.3mb  │ root     │ disabled │
 │ 6  │ nightly-factory       │ default     │ 1.0.0   │ fork    │ 0        │ 0      │ 0    │ stopped   │ 0%       │ 0b       │ root     │ disabled │
-│ 4  │ ultimate-scraper      │ default     │ 1.0.0   │ fork    │ 29699    │ 20s    │ 0    │ online    │ 0%       │ 150.6mb  │ root     │ disabled │
+│ 4  │ ultimate-scraper      │ default     │ 1.0.0   │ fork    │ 0        │ 0      │ 0    │ stopped   │ 0%       │ 0b       │ root     │ disabled │
 └────┴───────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
-host metrics | cpu: 54.2% | ram usage: 35.4% | lo: ⇓ 0.002mb/s ⇑ 0.002mb/s | eth0: ⇓ 0.035mb/s ⇑ 0.007mb/s | disk: ⇓ 0.071mb/s ⇑ 0.045mb/s |
+host metrics | cpu: 16.9% | ram usage: 36.6% | eth0: ⇓ 0.05mb/s ⇑ 0.003mb/s | disk: ⇓ 0.008mb/s ⇑ 0.025mb/s |
 
 === RECENT PM2 LOGS ===
 [TAILING] Tailing last 15 lines for [all] processes (change the value with --lines option)
 /root/.pm2/pm2.log last 15 lines:
-PM2        | 2026-07-30T09:04:13: PM2 log: App [engine-b-sentiment:2] starting in -fork mode-
-PM2        | 2026-07-30T09:04:13: PM2 log: App [ai-brain-daemon:3] starting in -fork mode-
-PM2        | 2026-07-30T09:04:13: PM2 log: App [engine-b-sentiment:2] online
-PM2        | 2026-07-30T09:04:13: PM2 log: App [ai-brain-daemon:3] online
-PM2        | 2026-07-30T09:04:13: PM2 log: [PM2][WORKER] Registering a cron job on: 4
-PM2        | 2026-07-30T09:04:13: PM2 log: App [ultimate-scraper:4] starting in -fork mode-
-PM2        | 2026-07-30T09:04:13: PM2 log: [PM2][WORKER] Registering a cron job on: 5
-PM2        | 2026-07-30T09:04:14: PM2 log: App [daily-reporter:5] starting in -fork mode-
-PM2        | 2026-07-30T09:04:14: PM2 log: App [ultimate-scraper:4] online
-PM2        | 2026-07-30T09:04:14: PM2 log: App [daily-reporter:5] online
-PM2        | 2026-07-30T09:04:14: PM2 log: [PM2][WORKER] Registering a cron job on: 6
-PM2        | 2026-07-30T09:04:14: PM2 log: App [nightly-factory:6] starting in -fork mode-
-PM2        | 2026-07-30T09:04:14: PM2 log: App [nightly-factory:6] online
-PM2        | 2026-07-30T09:04:19: PM2 log: App [nightly-factory:6] exited with code [1] via signal [SIGINT]
-PM2        | 2026-07-30T09:04:19: PM2 log: App [daily-reporter:5] exited with code [1] via signal [SIGINT]
+PM2        | 2026-08-05T22:45:17: PM2 log: App [engine-b-sentiment:2] will restart in 15000ms
+PM2        | 2026-08-05T22:45:32: PM2 log: App [engine-b-sentiment:2] starting in -fork mode-
+PM2        | 2026-08-05T22:45:32: PM2 log: App [engine-b-sentiment:2] online
+PM2        | 2026-08-05T22:45:49: PM2 log: App [engine-b-sentiment:2] exited with code [1] via signal [SIGINT]
+PM2        | 2026-08-05T22:45:49: PM2 log: App [engine-b-sentiment:2] will restart in 15000ms
+PM2        | 2026-08-05T22:45:56: PM2 log: Stopping app:ai-brain-daemon id:3
+PM2        | 2026-08-05T22:45:56: PM2 log: App [ai-brain-daemon:3] exited with code [0] via signal [SIGINT]
+PM2        | 2026-08-05T22:45:56: PM2 log: App [ai-brain-daemon:3] will restart in 100ms
+PM2        | 2026-08-05T22:45:56: PM2 log: pid=1856834 msg=process tree killed (1 pids)
+PM2        | 2026-08-05T22:45:56: PM2 log: App [ai-brain-daemon:3] starting in -fork mode-
+PM2        | 2026-08-05T22:45:56: PM2 log: App [ai-brain-daemon:3] online
+PM2        | 2026-08-05T22:45:56: PM2 error: Process with pid 1856940 already exists
+PM2        | 2026-08-05T22:45:57: PM2 log: App [ultimate-scraper:4] exited with code [0] via signal [SIGINT]
+PM2        | 2026-08-05T22:46:04: PM2 log: App [engine-b-sentiment:2] starting in -fork mode-
+PM2        | 2026-08-05T22:46:04: PM2 log: App [engine-b-sentiment:2] online
 
 /root/.pm2/logs/ultimate-scraper-error.log last 15 lines:
 4|ultimate | $ICICIBANK.NS: possibly delisted; no price data found  (1d 1927-08-08 -> 2026-07-14)
@@ -39,63 +39,6 @@ PM2        | 2026-07-30T09:04:19: PM2 log: App [daily-reporter:5] exited with co
 4|ultimate |   "timestamp": datetime.utcnow().isoformat() + "Z",
 4|ultimate | $SBIN.NS: possibly delisted; no price data found  (1d 1927-08-08 -> 2026-07-14)
 4|ultimate | $BAJFINANCE.NS: possibly delisted; no price data found  (1d 1927-08-08 -> 2026-07-14)
-
-/root/.pm2/logs/ai-brain-daemon-error.log last 15 lines:
-3|ai-brain |     return await future
-3|ai-brain |            ^^^^^^^^^^^^
-3|ai-brain | asyncio.exceptions.CancelledError
-3|ai-brain | 
-3|ai-brain | During handling of the above exception, another exception occurred:
-3|ai-brain | 
-3|ai-brain | Traceback (most recent call last):
-3|ai-brain |   File "/root/backend/ai_brain_daemon.py", line 82, in <module>
-3|ai-brain |     asyncio.run(daemon_loop())
-3|ai-brain |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
-3|ai-brain |     return runner.run(main)
-3|ai-brain |            ^^^^^^^^^^^^^^^^
-3|ai-brain |   File "/usr/lib/python3.12/asyncio/runners.py", line 123, in run
-3|ai-brain |     raise KeyboardInterrupt()
-3|ai-brain | KeyboardInterrupt
-
-/root/.pm2/logs/daily-reporter-out.log last 15 lines:
-/root/.pm2/logs/ai-brain-daemon-out.log last 15 lines:
-3|ai-brain | {"timestamp": "2026-07-23T17:17:14.373393Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:47:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:18:14.429732Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:48:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:19:14.491602Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:49:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:20:14.512833Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:50:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:21:14.573633Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:51:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:22:14.609824Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:52:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:23:14.670615Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:53:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:24:14.731018Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:54:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:25:14.784945Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:55:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:26:14.794857Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:56:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:27:14.853671Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:57:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:28:14.900863Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:58:14..."}
-3|ai-brain | {"timestamp": "2026-07-23T17:29:14.961563Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 22:59:14..."}
-3|ai-brain | {"timestamp": "2026-07-30T09:04:14.861784Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] 24/7 Macro-Economic AI Brain initialized."}
-3|ai-brain | {"timestamp": "2026-07-30T09:04:14.870431Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Market is OPEN. Tactical Analyst mode engaged. Protecting CPU for Engine A."}
-
-/root/.pm2/logs/nightly-factory-out.log last 15 lines:
-6|nightly- | Starting Nightly Strategy Factory. Generating 50 strategies...
-6|nightly- | Using 23 bars (30 days) for validation.
-6|nightly- | {"timestamp": "2026-07-30T09:04:18.349116Z", "level": "INFO", "module": "walk_forward", "message": "Computing features for 23 bars..."}
-
-/root/.pm2/logs/nightly-factory-error.log last 15 lines:
-6|nightly- |   File "/root/backend/nightly_factory.py", line 107, in <module>
-6|nightly- |     run_factory()
-6|nightly- |   File "/root/backend/nightly_factory.py", line 59, in run_factory
-6|nightly- |     res = run_strategy_backtest(df_30d, strategy)
-6|nightly- |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-6|nightly- |   File "/root/backend/walk_forward.py", line 34, in run_strategy_backtest
-6|nightly- |     df = compute_features(df)
-6|nightly- |          ^^^^^^^^^^^^^^^^^^^^
-6|nightly- |   File "/root/backend/feature_engine.py", line 30, in compute_features
-6|nightly- |     df['ADX_14'] = adx_ind.adx()
-6|nightly- |                    ^^^^^^^^^^^^^
-6|nightly- |   File "/root/backend/venv/lib/python3.12/site-packages/ta/trend.py", line 807, in adx
-6|nightly- |     adx_series[self._window] = directional_index[0 : self._window].mean()
-6|nightly- |     ~~~~~~~~~~^^^^^^^^^^^^^^
-6|nightly- | IndexError: index 14 is out of bounds for axis 0 with size 10
 
 /root/.pm2/logs/daily-reporter-error.log last 15 lines:
 5|daily-re | Traceback (most recent call last):
@@ -114,122 +57,188 @@ PM2        | 2026-07-30T09:04:19: PM2 log: App [daily-reporter:5] exited with co
 5|daily-re |     raise KeyError(key) from err
 5|daily-re | KeyError: 'side'
 
-/root/.pm2/logs/engine-a-technical-out.log last 15 lines:
-1|engine-a | {"timestamp": "2026-07-13T06:25:15.775705Z", "level": "ERROR", "module": "live_trader", "message": "Error processing tick: table paper_trades has no column named notes"}
-1|engine-a | {"timestamp": "2026-07-13T06:25:20.782657Z", "level": "INFO", "module": "live_trader", "message": "[11:55:20] Firing tick to 2 strategies..."}
-1|engine-a | {"timestamp": "2026-07-13T06:25:31.053533Z", "level": "ERROR", "module": "data_provider", "message": "Error saving bars to db: database is locked"}
-1|engine-a | {"timestamp": "2026-07-13T06:25:41.210494Z", "level": "ERROR", "module": "data_provider", "message": "Error saving bars to db: database is locked"}
-1|engine-a | {"timestamp": "2026-07-13T06:25:41.730279Z", "level": "ERROR", "module": "live_trader", "message": "Error processing tick: table paper_trades has no column named notes"}
-1|engine-a | {"timestamp": "2026-07-13T06:25:46.738277Z", "level": "INFO", "module": "live_trader", "message": "[11:55:46] Firing tick to 2 strategies..."}
-1|engine-a | {"timestamp": "2026-07-13T06:25:56.885786Z", "level": "ERROR", "module": "data_provider", "message": "Error saving bars to db: database is locked"}
-1|engine-a | {"timestamp": "2026-07-13T06:26:07.035139Z", "level": "ERROR", "module": "data_provider", "message": "Error saving bars to db: database is locked"}
-1|engine-a | {"timestamp": "2026-07-13T06:26:07.579038Z", "level": "ERROR", "module": "live_trader", "message": "Error processing tick: table paper_trades has no column named notes"}
-1|engine-a | {"timestamp": "2026-07-13T06:26:12.587007Z", "level": "INFO", "module": "live_trader", "message": "[11:56:12] Firing tick to 2 strategies..."}
-1|engine-a | {"timestamp": "2026-07-30T09:04:19.989973Z", "level": "INFO", "module": "live_trader", "message": "Loaded Dynamic Strategy: S001_ORB"}
-1|engine-a | {"timestamp": "2026-07-30T09:04:19.995189Z", "level": "INFO", "module": "live_trader", "message": "Loaded Dynamic Strategy: S002_VWAP"}
-1|engine-a | {"timestamp": "2026-07-30T09:04:19.999810Z", "level": "INFO", "module": "live_trader", "message": "Initialized Engine with 9 total strategies. MetaAllocator active."}
-1|engine-a | {"timestamp": "2026-07-30T09:04:20.004301Z", "level": "INFO", "module": "live_trader", "message": "[14:34:20] Firing tick to 9 strategies..."}
-1|engine-a | {"timestamp": "2026-07-30T09:04:20.004666Z", "level": "INFO", "module": "data_provider", "message": "Batch downloading 50 symbols..."}
+/root/.pm2/logs/engine-a-technical-error.log last 15 lines:
+1|engine-a | INFO:AlgoTradeAI:[15:28:18] Firing tick to 9 strategies...
+1|engine-a | INFO:AlgoTradeAI:Downloading 50 symbols from TradingView...
+1|engine-a | ERROR:tvDatafeed.main:Connection timed out
+1|engine-a | ERROR:tvDatafeed.main:no data, please check the exchange and symbol
+1|engine-a | INFO:AlgoTradeAI:MetaAllocator evaluating 122 raw intents...
+1|engine-a | WARNING:AlgoTradeAI:MetaAllocator Circuit Breaker: Daily trade limit reached (10/5). Vetoing all new trades.
+1|engine-a | INFO:AlgoTradeAI:[15:29:18] Firing tick to 9 strategies...
+1|engine-a | INFO:AlgoTradeAI:Downloading 50 symbols from TradingView...
+1|engine-a | ERROR:tvDatafeed.main:Connection timed out
+1|engine-a | ERROR:tvDatafeed.main:no data, please check the exchange and symbol
+1|engine-a | INFO:AlgoTradeAI:MetaAllocator evaluating 122 raw intents...
+1|engine-a | WARNING:AlgoTradeAI:MetaAllocator Circuit Breaker: Daily trade limit reached (10/5). Vetoing all new trades.
+1|engine-a | INFO:AlgoTradeAI:Live Paper Trader stopped manually.
+1|engine-a | you are using nologin method, data you access may be limited
+1|engine-a | you are using nologin method, data you access may be limited
 
-/root/.pm2/logs/engine-b-sentiment-error.log last 15 lines:
-2|engine-b |   File "/root/backend/engine_b_advisor.py", line 373, in run_live
-2|engine-b |     scrape_feeds()
-2|engine-b |   File "/root/backend/engine_b_advisor.py", line 146, in scrape_feeds
-2|engine-b |     time.sleep(2) # polite delay
-2|engine-b |     ^^^^^^^^^^^^^
-2|engine-b | KeyboardInterrupt
-2|engine-b | /root/backend/engine_b_advisor.py:11: FutureWarning: 
-2|engine-b | 
-2|engine-b | All support for the `google.generativeai` package has ended. It will no longer be receiving 
-2|engine-b | updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
-2|engine-b | See README for more details:
-2|engine-b | 
-2|engine-b | https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
-2|engine-b | 
-2|engine-b |   import google.generativeai as genai
+/root/.pm2/logs/engine-a-technical-out.log last 15 lines:
+1|engine-a | {"timestamp": "2026-08-05T09:58:18.232207Z", "level": "INFO", "module": "data_provider", "message": "Downloading 50 symbols from TradingView..."}
+1|engine-a | {"timestamp": "2026-08-05T09:58:48.652905Z", "level": "INFO", "module": "live_trader", "message": "MetaAllocator evaluating 122 raw intents..."}
+1|engine-a | {"timestamp": "2026-08-05T09:58:48.653637Z", "level": "WARNING", "module": "live_trader", "message": "MetaAllocator Circuit Breaker: Daily trade limit reached (10/5). Vetoing all new trades."}
+1|engine-a | {"timestamp": "2026-08-05T09:59:18.738275Z", "level": "INFO", "module": "live_trader", "message": "[15:29:18] Firing tick to 9 strategies..."}
+1|engine-a | {"timestamp": "2026-08-05T09:59:18.738823Z", "level": "INFO", "module": "data_provider", "message": "Downloading 50 symbols from TradingView..."}
+1|engine-a | {"timestamp": "2026-08-05T09:59:49.295877Z", "level": "INFO", "module": "live_trader", "message": "MetaAllocator evaluating 122 raw intents..."}
+1|engine-a | {"timestamp": "2026-08-05T09:59:49.296069Z", "level": "WARNING", "module": "live_trader", "message": "MetaAllocator Circuit Breaker: Daily trade limit reached (10/5). Vetoing all new trades."}
+1|engine-a | {"timestamp": "2026-08-05T21:35:12.588649Z", "level": "INFO", "module": "live_trader", "message": "Live Paper Trader stopped manually."}
+1|engine-a | {"timestamp": "2026-08-05T21:35:13.767362Z", "level": "INFO", "module": "live_trader", "message": "[S001_ORB] Loaded optimized params."}
+1|engine-a | {"timestamp": "2026-08-05T21:35:13.768573Z", "level": "INFO", "module": "live_trader", "message": "[S002_VWAP] Loaded optimized params."}
+1|engine-a | {"timestamp": "2026-08-05T21:35:13.770574Z", "level": "INFO", "module": "live_trader", "message": "Initialized Engine with 7 total strategies. MetaAllocator active."}
+1|engine-a | {"timestamp": "2026-08-05T22:40:52.240505Z", "level": "INFO", "module": "live_trader", "message": "Live Paper Trader stopped manually."}
+1|engine-a | {"timestamp": "2026-08-05T22:40:56.986592Z", "level": "INFO", "module": "live_trader", "message": "[S001_ORB] Loaded optimized params."}
+1|engine-a | {"timestamp": "2026-08-05T22:40:56.988601Z", "level": "INFO", "module": "live_trader", "message": "[S002_VWAP] Loaded optimized params."}
+1|engine-a | {"timestamp": "2026-08-05T22:40:56.995992Z", "level": "INFO", "module": "live_trader", "message": "Initialized Engine with 7 total strategies. MetaAllocator active."}
+
+/root/.pm2/logs/daily-reporter-out.log last 15 lines:
+5|daily-re | EOD Report sent to Discord.
+5|daily-re | EOD Report sent to Discord.
 
 /root/.pm2/logs/algotrade-api-error.log last 15 lines:
+0|algotrad |   File "/root/backend/api.py", line 572
+0|algotrad |     class KeyRequest(BaseModel):
+0|algotrad | SyntaxError: expected 'except' or 'finally' block
+0|algotrad | INFO:     Started server process [1856275]
+0|algotrad | INFO:     Waiting for application startup.
+0|algotrad | INFO:     Application startup complete.
+0|algotrad | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+0|algotrad | INFO:     Shutting down
+0|algotrad | INFO:     Waiting for application shutdown.
 0|algotrad | INFO:     Application shutdown complete.
-0|algotrad | INFO:     Finished server process [13920]
-0|algotrad | /root/backend/api.py:13: FutureWarning: 
-0|algotrad | 
-0|algotrad | All support for the `google.generativeai` package has ended. It will no longer be receiving 
-0|algotrad | updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
-0|algotrad | See README for more details:
-0|algotrad | 
-0|algotrad | https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
-0|algotrad | 
-0|algotrad |   import google.generativeai as genai
-0|algotrad | INFO:     Started server process [29695]
+0|algotrad | INFO:     Finished server process [1856275]
+0|algotrad | INFO:     Started server process [1856596]
 0|algotrad | INFO:     Waiting for application startup.
 0|algotrad | INFO:     Application startup complete.
 0|algotrad | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 
-/root/.pm2/logs/engine-a-technical-error.log last 15 lines:
-1|engine-a | Traceback (most recent call last):
-1|engine-a |   File "/root/backend/paper_trader.py", line 506, in <module>
-1|engine-a |     trader.run_live()
-1|engine-a |   File "/root/backend/paper_trader.py", line 502, in run_live
-1|engine-a |     time.sleep(1)
-1|engine-a | KeyboardInterrupt
-1|engine-a | Traceback (most recent call last):
-1|engine-a |   File "/root/backend/paper_trader.py", line 506, in <module>
-1|engine-a |     trader.run_live()
-1|engine-a |   File "/root/backend/paper_trader.py", line 502, in run_live
-1|engine-a |     time.sleep(1)
-1|engine-a | KeyboardInterrupt
-1|engine-a | 
-1|engine-a | 50 Failed downloads:
-1|engine-a | ['ASIANPAINT.NS', 'LT.NS', 'JSWSTEEL.NS', 'APOLLOHOSP.NS', 'TCS.NS', 'BAJFINANCE.NS', 'MARUTI.NS', 'TITAN.NS', 'RELIANCE.NS', 'TECHM.NS', 'DRREDDY.NS', 'INFY.NS', 'BRITANNIA.NS', 'SUNPHARMA.NS', 'HEROMOTOCO.NS', 'BAJAJ-AUTO.NS', 'CIPLA.NS', 'EICHERMOT.NS', 'WIPRO.NS', 'ICICIBANK.NS', 'UPL.NS', 'ONGC.NS', 'TATASTEEL.NS', 'DIVISLAB.NS', 'ADANIENT.NS', 'TATAMOTORS.NS', 'HDFCBANK.NS', 'BPCL.NS', 'INDUSINDBK.NS', 'ITC.NS', 'KOTAKBANK.NS', 'AXISBANK.NS', 'SBIN.NS', 'HCLTECH.NS', 'HINDUNILVR.NS', 'BHARTIARTL.NS', 'TATACONSUM.NS', 'SBILIFE.NS', 'TATACHEM.NS', 'SHREECEM.NS', 'ADANIPORTS.NS', 'COALINDIA.NS', 'GRASIM.NS', 'NESTLEIND.NS', 'ULTRACEMCO.NS', 'M&M.NS', 'NTPC.NS', 'BAJAJFINSV.NS', 'HINDALCO.NS', 'POWERGRID.NS']: YFRateLimitError('Too Many Requests. Rate limited. Try after a while.')
+/root/.pm2/logs/nightly-factory-out.log last 15 lines:
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.196247Z", "level": "INFO", "module": "walk_forward", "message": "Starting backtest for AI Generated: GEN_0730_047 (GEN_0730_047)..."}
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.223854Z", "level": "INFO", "module": "walk_forward", "message": "Backtest Complete for AI Generated: GEN_0730_047: PF=0.00, Win Rate=0.0%, Trades=0"}
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.239128Z", "level": "INFO", "module": "walk_forward", "message": "Computing features for 23 bars..."}
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.241566Z", "level": "INFO", "module": "walk_forward", "message": "Starting backtest for AI Generated: GEN_0730_048 (GEN_0730_048)..."}
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.269210Z", "level": "INFO", "module": "walk_forward", "message": "Backtest Complete for AI Generated: GEN_0730_048: PF=0.00, Win Rate=0.0%, Trades=0"}
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.269797Z", "level": "INFO", "module": "walk_forward", "message": "Computing features for 23 bars..."}
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.269926Z", "level": "INFO", "module": "walk_forward", "message": "Starting backtest for AI Generated: GEN_0730_049 (GEN_0730_049)..."}
+6|nightly- | {"timestamp": "2026-07-30T11:30:03.290694Z", "level": "INFO", "module": "walk_forward", "message": "Backtest Complete for AI Generated: GEN_0730_049: PF=0.00, Win Rate=0.0%, Trades=0"}
+6|nightly- | No strategies passed the validation gates tonight.
+6|nightly- | Starting Nightly Strategy Factory. Generating 50 strategies...
+6|nightly- | Using 23 bars (30 days) for validation.
+6|nightly- | {"timestamp": "2026-08-05T22:40:58.646719Z", "level": "INFO", "module": "walk_forward", "message": "Computing features for 23 bars..."}
+6|nightly- | Starting Nightly Strategy Factory. Generating 50 strategies...
+6|nightly- | Using 23 bars (30 days) for validation.
+6|nightly- | {"timestamp": "2026-08-05T22:43:54.560815Z", "level": "INFO", "module": "walk_forward", "message": "Computing features for 23 bars..."}
 
-/root/.pm2/logs/algotrade-api-out.log last 15 lines:
-0|algotrad | INFO:     42.107.241.74:29222 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29222 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29222 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29206 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29206 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29246 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29212 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29212 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.74:29212 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.187:48252 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.187:48252 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.187:48252 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.187:48252 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.187:48252 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
-0|algotrad | INFO:     42.107.241.187:48252 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
+/root/.pm2/logs/nightly-factory-error.log last 15 lines:
+6|nightly- |   File "/root/backend/nightly_factory.py", line 107, in <module>
+6|nightly- |     run_factory()
+6|nightly- |   File "/root/backend/nightly_factory.py", line 59, in run_factory
+6|nightly- |     res = run_strategy_backtest(df_30d, strategy)
+6|nightly- |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6|nightly- |   File "/root/backend/walk_forward.py", line 34, in run_strategy_backtest
+6|nightly- |     df = compute_features(df)
+6|nightly- |          ^^^^^^^^^^^^^^^^^^^^
+6|nightly- |   File "/root/backend/feature_engine.py", line 33, in compute_features
+6|nightly- |     df['ADX_14'] = adx_ind.adx()
+6|nightly- |                    ^^^^^^^^^^^^^
+6|nightly- |   File "/root/backend/venv/lib/python3.12/site-packages/ta/trend.py", line 807, in adx
+6|nightly- |     adx_series[self._window] = directional_index[0 : self._window].mean()
+6|nightly- |     ~~~~~~~~~~^^^^^^^^^^^^^^
+6|nightly- | IndexError: index 14 is out of bounds for axis 0 with size 10
+
+/root/.pm2/logs/engine-b-sentiment-error.log last 15 lines:
+2|engine-b |   File "/root/backend/engine_b_advisor.py", line 374, in run_live
+2|engine-b |     rank_daily_tips()
+2|engine-b |   File "/root/backend/engine_b_advisor.py", line 256, in rank_daily_tips
+2|engine-b |     if "BUY" in signal:
+2|engine-b |        ^^^^^^^^^^^^^^^
+2|engine-b | TypeError: argument of type 'float' is not iterable
+2|engine-b | Traceback (most recent call last):
+2|engine-b |   File "/root/backend/engine_b_advisor.py", line 416, in <module>
+2|engine-b |     advisor.run_live()
+2|engine-b |   File "/root/backend/engine_b_advisor.py", line 374, in run_live
+2|engine-b |     rank_daily_tips()
+2|engine-b |   File "/root/backend/engine_b_advisor.py", line 256, in rank_daily_tips
+2|engine-b |     if "BUY" in signal:
+2|engine-b |        ^^^^^^^^^^^^^^^
+2|engine-b | TypeError: argument of type 'float' is not iterable
+
+/root/.pm2/logs/ai-brain-daemon-error.log last 15 lines:
+3|ai-brain |     return await future
+3|ai-brain |            ^^^^^^^^^^^^
+3|ai-brain | asyncio.exceptions.CancelledError
+3|ai-brain | 
+3|ai-brain | During handling of the above exception, another exception occurred:
+3|ai-brain | 
+3|ai-brain | Traceback (most recent call last):
+3|ai-brain |   File "/root/backend/ai_brain_daemon.py", line 83, in <module>
+3|ai-brain |     asyncio.run(daemon_loop())
+3|ai-brain |   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+3|ai-brain |     return runner.run(main)
+3|ai-brain |            ^^^^^^^^^^^^^^^^
+3|ai-brain |   File "/usr/lib/python3.12/asyncio/runners.py", line 123, in run
+3|ai-brain |     raise KeyboardInterrupt()
+3|ai-brain | KeyboardInterrupt
 
 /root/.pm2/logs/ultimate-scraper-out.log last 15 lines:
-4|ultimate | {"timestamp": "2026-07-23T17:30:08.269766Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Failed to fetch https://rbi.org.in/Scripts/BS_PressRelease.aspx?feed=rss: 418 Client Error: Unknown Code for url: https://rbi.org.in/Scripts/BS_PressRelease.aspx?feed=rss"}
-4|ultimate | {"timestamp": "2026-07-23T17:30:08.296766Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating ET Markets RSS Protocol..."}
-4|ultimate | {"timestamp": "2026-07-23T17:30:08.989814Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Failed to fetch https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1: 404 Client Error: Not Found for url: https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1"}
-4|ultimate | {"timestamp": "2026-07-30T09:04:20.115579Z", "level": "INFO", "module": "ultimate_scraper", "message": "========== STARTING ULTIMATE SCRAPER (THREADPOOL) =========="}
-4|ultimate | {"timestamp": "2026-07-30T09:04:20.118815Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating RBI RSS Protocol..."}
-4|ultimate | {"timestamp": "2026-07-30T09:04:20.121575Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating SEBI HTML Parsing Protocol..."}
-4|ultimate | {"timestamp": "2026-07-30T09:04:20.125487Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating YFinance Aggregator..."}
-4|ultimate | {"timestamp": "2026-07-30T09:04:20.146928Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating YFinance Corporate Actions (Dividends/Splits)..."}
-4|ultimate | {"timestamp": "2026-07-30T09:04:20.148761Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating Moneycontrol Earnings Calendar..."}
-4|ultimate | {"timestamp": "2026-07-30T09:04:22.400682Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Failed to fetch https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1: 404 Client Error: Not Found for url: https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1"}
-4|ultimate | {"timestamp": "2026-07-30T09:04:22.410586Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating ET Markets RSS Protocol..."}
-4|ultimate | {"timestamp": "2026-07-30T09:04:23.194375Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Failed to fetch https://rbi.org.in/Scripts/BS_PressRelease.aspx?feed=rss: 418 Client Error: Unknown Code for url: https://rbi.org.in/Scripts/BS_PressRelease.aspx?feed=rss"}
-4|ultimate | {"timestamp": "2026-07-30T09:04:28.156169Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] YFinance Actions Error for RELIANCE.NS: database is locked"}
-4|ultimate | {"timestamp": "2026-07-30T09:04:32.669885Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Database error: database is locked"}
-4|ultimate | {"timestamp": "2026-07-30T09:04:34.685810Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Database error: database is locked"}
+4|ultimate | {"timestamp": "2026-08-05T22:41:38.545068Z", "level": "INFO", "module": "ultimate_scraper", "message": "-> Acquired 0 new Financial News headlines."}
+4|ultimate | {"timestamp": "2026-08-05T22:41:55.236868Z", "level": "INFO", "module": "ultimate_scraper", "message": "-> Logged 1 new corporate events from YFinance."}
+4|ultimate | {"timestamp": "2026-08-05T22:41:55.252739Z", "level": "INFO", "module": "ultimate_scraper", "message": "========== SCRAPE COMPLETE. Total New Items: 51 =========="}
+4|ultimate | {"timestamp": "2026-08-05T22:45:02.535263Z", "level": "INFO", "module": "ultimate_scraper", "message": "========== STARTING ULTIMATE SCRAPER (THREADPOOL) =========="}
+4|ultimate | {"timestamp": "2026-08-05T22:45:02.538603Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating RBI RSS Protocol..."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:02.541480Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating SEBI HTML Parsing Protocol..."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:02.542527Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating YFinance Aggregator..."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:02.548782Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating YFinance Corporate Actions (Dividends/Splits)..."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:02.556829Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating Moneycontrol Earnings Calendar..."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:06.000179Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Failed to fetch https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1: 403 Client Error: Forbidden for url: https://www.moneycontrol.com/stocks/marketinfo/board-meetings/homebody.php?type=1"}
+4|ultimate | {"timestamp": "2026-08-05T22:45:06.006683Z", "level": "INFO", "module": "ultimate_scraper", "message": "[Scraper] Initiating ET Markets RSS Protocol..."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:06.170158Z", "level": "ERROR", "module": "ultimate_scraper", "message": "[Scraper] Failed to fetch https://rbi.org.in/Scripts/BS_PressRelease.aspx?feed=rss: 418 Client Error: Unknown Code for url: https://rbi.org.in/Scripts/BS_PressRelease.aspx?feed=rss"}
+4|ultimate | {"timestamp": "2026-08-05T22:45:47.943424Z", "level": "INFO", "module": "ultimate_scraper", "message": "-> Acquired 0 new Financial News headlines."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:57.348603Z", "level": "INFO", "module": "ultimate_scraper", "message": "-> Logged 0 new corporate events from YFinance."}
+4|ultimate | {"timestamp": "2026-08-05T22:45:57.364093Z", "level": "INFO", "module": "ultimate_scraper", "message": "========== SCRAPE COMPLETE. Total New Items: 0 =========="}
+
+/root/.pm2/logs/ai-brain-daemon-out.log last 15 lines:
+3|ai-brain | f_full[df_full['Symbol'] == sym]\n                     ~~~~~~~^^^^^^^^^^\n  File \"/root/backend/venv/lib/python3.12/site-packages/pandas/core/frame.py\", line 4378, in __getitem__\n    indexer = self.columns.get_loc(key)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/backend/venv/lib/python3.12/site-packages/pandas/core/indexes/base.py\", line 3648, in get_loc\n    raise KeyError(key) from err\nKeyError: 'Symbol'\n"}
+3|ai-brain | {"timestamp": "2026-08-05T22:44:00.472153Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 04:14:00..."}
+3|ai-brain | {"timestamp": "2026-08-05T22:45:00.533571Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 04:15:00..."}
+3|ai-brain | {"timestamp": "2026-08-05T22:45:56.976529Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] 24/7 Macro-Economic AI Brain initialized."}
+3|ai-brain | {"timestamp": "2026-08-05T22:45:56.976816Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Pre-Market. Acting as Synthesizer. Injecting NLP features and training AI..."}
+3|ai-brain | {"timestamp": "2026-08-05T22:45:56.976882Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Launching model_trainer.py..."}
+3|ai-brain | {"timestamp": "2026-08-05T22:46:00.489415Z", "level": "ERROR", "module": "ai_brain_daemon", "message": "[Daemon] model_trainer.py failed with code 1"}
+3|ai-brain | {"timestamp": "2026-08-05T22:46:00.491532Z", "level": "ERROR", "module": "ai_brain_daemon", "message": "Traceback (most recent call last):\n  File \"/root/backend/venv/lib/python3.12/site-packages/pandas/core/indexes/base.py\", line 3641, in get_loc\n    return self._engine.get_loc(casted_key)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"pandas/_libs/index.pyx\", line 168, in pandas._libs.index.IndexEngine.get_loc\n  File \"pandas/_libs/index.pyx\", line 197, in pandas._libs.index.IndexEngine.get_loc\n  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7668, in pandas._libs.hashtable.PyObjectHashTable.get_item\n  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7676, in pandas._libs.hashtable.PyObjectHashTable.get_item\nKeyError: 'Symbol'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/root/backend/model_trainer.py\", line 405, in <module>\n    main()\n  File \"/root/backend/model_trainer.py\", line 338, in main\n    df_sym = df_full[df_full['Symbol'] == sym]\n                     ~~~~~~~^^^^^^^^^^\n  File \"/root/backend/venv/lib/python3.12/site-packages/pandas/core/frame.py\", line 4378, in __getitem__\n    indexer = self.columns.get_loc(key)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/backend/venv/lib/python3.12/site-packages/pandas/core/indexes/base.py\", line 3648, in get_loc\n    raise KeyError(key) from err\nKeyError: 'Symbol'\n"}
+3|ai-brain | {"timestamp": "2026-08-05T22:46:00.492136Z", "level": "INFO", "module": "ai_brain_daemon", "message": "[Daemon] Phase complete. Resting at 04:16:00..."}
+
+/root/.pm2/logs/algotrade-api-out.log last 15 lines:
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=0 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/indices HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
+0|algotrad | INFO:     1.187.224.148:51152 - "GET /api/poll?last_ah_id=459 HTTP/1.1" 200 OK
 
 /root/.pm2/logs/engine-b-sentiment-out.log last 15 lines:
-2|engine-b | {"timestamp": "2026-07-23T17:29:47.072954Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting RSS Scrape..."}
-2|engine-b | {"timestamp": "2026-07-23T17:30:00.188568Z", "level": "INFO", "module": "engine_b_advisor", "message": "Scrape Complete. Added 0 relevant headlines. Triggered 0 macro alerts."}
-2|engine-b | {"timestamp": "2026-07-23T17:30:00.188809Z", "level": "INFO", "module": "engine_b_advisor", "message": "Aggregating hourly sentiment..."}
-2|engine-b | {"timestamp": "2026-07-23T17:30:00.224154Z", "level": "INFO", "module": "engine_b_advisor", "message": "Ranking daily tips..."}
-2|engine-b | {"timestamp": "2026-07-23T17:30:06.297724Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting Engine B Advisor Daemon..."}
-2|engine-b | {"timestamp": "2026-07-23T17:30:06.298392Z", "level": "INFO", "module": "engine_b_advisor", "message": "Performing initial startup scrape & rank..."}
-2|engine-b | {"timestamp": "2026-07-23T17:30:06.298589Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting RSS Scrape..."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:21.177396Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting Engine B Advisor Daemon..."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:21.177749Z", "level": "INFO", "module": "engine_b_advisor", "message": "Performing initial startup scrape & rank..."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:21.177866Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting RSS Scrape..."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:34.906126Z", "level": "INFO", "module": "engine_b_advisor", "message": "Scrape Complete. Added 8 relevant headlines. Triggered 0 macro alerts."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:34.906352Z", "level": "INFO", "module": "engine_b_advisor", "message": "Aggregating hourly sentiment..."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:34.933682Z", "level": "INFO", "module": "engine_b_advisor", "message": "Ranking daily tips..."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:34.942430Z", "level": "WARNING", "module": "engine_b_advisor", "message": "No sentiment scores found for today to rank."}
-2|engine-b | {"timestamp": "2026-07-30T09:04:34.943170Z", "level": "INFO", "module": "engine_b_advisor", "message": "Enriching newly scraped news with Gemini 1.5 Pro signals..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:02.719331Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting Engine B Advisor Daemon..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:02.720284Z", "level": "INFO", "module": "engine_b_advisor", "message": "Performing initial startup scrape & rank..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:02.721475Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting RSS Scrape..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:16.493362Z", "level": "INFO", "module": "engine_b_advisor", "message": "Scrape Complete. Added 0 relevant headlines. Triggered 0 macro alerts."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:16.493554Z", "level": "INFO", "module": "engine_b_advisor", "message": "Aggregating hourly sentiment..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:16.544690Z", "level": "INFO", "module": "engine_b_advisor", "message": "Ranking daily tips..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:34.714969Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting Engine B Advisor Daemon..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:34.716578Z", "level": "INFO", "module": "engine_b_advisor", "message": "Performing initial startup scrape & rank..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:34.716709Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting RSS Scrape..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:48.440880Z", "level": "INFO", "module": "engine_b_advisor", "message": "Scrape Complete. Added 0 relevant headlines. Triggered 0 macro alerts."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:48.441076Z", "level": "INFO", "module": "engine_b_advisor", "message": "Aggregating hourly sentiment..."}
+2|engine-b | {"timestamp": "2026-08-05T22:45:48.479770Z", "level": "INFO", "module": "engine_b_advisor", "message": "Ranking daily tips..."}
+2|engine-b | {"timestamp": "2026-08-05T22:46:07.075737Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting Engine B Advisor Daemon..."}
+2|engine-b | {"timestamp": "2026-08-05T22:46:07.077566Z", "level": "INFO", "module": "engine_b_advisor", "message": "Performing initial startup scrape & rank..."}
+2|engine-b | {"timestamp": "2026-08-05T22:46:07.078126Z", "level": "INFO", "module": "engine_b_advisor", "message": "Starting RSS Scrape..."}
 

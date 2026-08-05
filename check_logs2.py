@@ -9,8 +9,8 @@ try:
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(IP, username=USER, password=PASS, timeout=10)
     
-    stdin, stdout, stderr = ssh.exec_command("grep '09:15:' /root/.pm2/logs/engine-a-technical-out.log | head -n 30")
-    print("--- 09:15 LOGS ---")
+    stdin, stdout, stderr = ssh.exec_command("grep '03:45:' /root/.pm2/logs/engine-a-technical-out.log | tail -n 30")
+    print("--- 03:45 (09:15 IST) LOGS ---")
     print(stdout.read().decode('utf-8'))
     
     ssh.close()

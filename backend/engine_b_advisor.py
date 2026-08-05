@@ -8,13 +8,11 @@ import pandas as pd
 from datetime import datetime, timedelta, time as dtime
 from zoneinfo import ZoneInfo
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from logger import log
 
 DB_PATH = "trading_system.db"
-
-# Initialize Gemini Client (Make sure GEMINI_API_KEY is in .env or exported)
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 FEEDS = [
     "https://economictimes.indiatimes.com/markets/rssfeeds/2146842.cms",
@@ -102,7 +100,7 @@ def scrape_feeds():
                 # Hash for deduplication
                 hash_str = hashlib.md5((title + link).encode('utf-8')).hexdigest()
                 
-                cursor.execute("SELECT id FROM raw_news WHERE hash=?", (hash_str,))
+                cursor.execute("SELECT id FROM scraped_news WHERE content_hash=?", (hash_str,))
                 if cursor.fetchone() is not None:
                     continue # duplicate
                     
@@ -135,7 +133,7 @@ def scrape_feeds():
                 if not symbols: continue # skip standard sentiment if no exact symbols
                 
                 cursor.execute("""
-                    INSERT INTO raw_news (timestamp, source, title, link, hash, symbols_mentioned)
+                    INSERT INTO scraped_news (timestamp, source, headline, content, content_hash, related_tickers)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """, (current_time_str, feed_url, title, link, hash_str, ",".join(symbols)))
                 new_headlines += 1
@@ -170,7 +168,7 @@ def aggregate_hourly_sentiment(current_time=None):
     scores = []
     for _, row in df.iterrows():
         # Convert action_signal to a float score
-        signal = row.get('action_signal', '')
+        signal = row.get('action_signal') or ''
         conf = float(row.get('confidence_score', 0.0) or 0.0)
         
         if "BUY" in signal:
@@ -253,6 +251,9 @@ def rank_daily_tips(current_time=None):
             tickers = raw.get('related_tickers', '')
             if sym in tickers:
                 signal = raw.get('action_signal', '')
+                if isinstance(signal, float):
+                    signal = "HOLD"
+                
                 conf = float(raw.get('confidence_score', 0.0) or 0.0)
                 
                 if "BUY" in signal:
@@ -302,10 +303,11 @@ You must output a strictly formatted JSON object with the following fields:
 4. "rationale": A concise, 1-2 sentence explanation of your reasoning.
 """
     try:
-        model = genai.GenerativeModel('gemini-1.5-pro')
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        response = client.models.generate_content(
+            model='gemini-1.5-pro',
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.1,
             )

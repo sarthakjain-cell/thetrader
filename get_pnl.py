@@ -10,8 +10,8 @@ try:
     ssh.connect(IP, username=USER, password=PASS, timeout=10)
     
     print(f"--- Open Positions ---")
-    query = "SELECT id, symbol, strategy_id, entry_time, qty, entry_price FROM paper_positions;"
-    stdin, stdout, stderr = ssh.exec_command(f"sqlite3 /root/backend/trading_system.db -header -column \"{query}\"")
+    query = "SELECT * FROM paper_trades WHERE DATE(exit_time) = '2026-08-05';"
+    stdin, stdout, stderr = ssh.exec_command(f"sqlite3 /root/backend/trading_system.db -header -column \\\"{query}\\\"")
     print(stdout.read().decode().strip())
         
     print("\n--- Recent Logs (live_trader) ---")

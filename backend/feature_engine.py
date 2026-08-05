@@ -28,8 +28,11 @@ def compute_features(df: pd.DataFrame) -> pd.DataFrame:
     df['ATR_14'] = np.where(df['ATR_14'] == 0, df['Close'] * 0.005, df['ATR_14'])
     
     # 4. ADX
-    adx_ind = ta.trend.ADXIndicator(df['High'], df['Low'], df['Close'], window=14)
-    df['ADX_14'] = adx_ind.adx()
+    if len(df) > 14:
+        adx_ind = ta.trend.ADXIndicator(df['High'], df['Low'], df['Close'], window=14)
+        df['ADX_14'] = adx_ind.adx()
+    else:
+        df['ADX_14'] = 0
     
     # 5. VWAP (Intraday)
     # Assumes df index is Datetime or there's a 'Datetime' column to group by day

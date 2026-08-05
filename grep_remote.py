@@ -9,8 +9,7 @@ try:
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(IP, username=USER, password=PASS, timeout=10)
     
-    stdin, stdout, stderr = ssh.exec_command("grep '09:15:' /root/.pm2/logs/engine-a-technical-out.log | head -n 30")
-    print("--- 09:15 LOGS ---")
+    stdin, stdout, stderr = ssh.exec_command("grep -rn 'Dynamic conditions met' /root/backend/*.py")
     print(stdout.read().decode('utf-8'))
     
     ssh.close()

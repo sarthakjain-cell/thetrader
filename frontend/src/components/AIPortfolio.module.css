@@ -33,22 +33,17 @@
 }
 
 .pnlValue {
-  font-size: 1.5rem;
-  font-weight: 800;
-  font-family: 'Inter', monospace;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
 }
 
 .pnlValue.positive {
-  background-image: linear-gradient(135deg, #00FF87 0%, #60EFFF 100%);
-  text-shadow: 0 0 20px rgba(0, 255, 135, 0.4);
+  color: #10b981;
 }
 
 .pnlValue.negative {
-  background-image: linear-gradient(135deg, #FF3366 0%, #FF9933 100%);
-  text-shadow: 0 0 20px rgba(255, 51, 102, 0.4);
+  color: #f43f5e;
 }
 
 /* Equity Chart */
@@ -111,8 +106,8 @@
 }
 
 .riskValue {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
 }
@@ -167,28 +162,20 @@
 }
 
 .activeDot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: #00c897;
-  box-shadow: 0 0 8px #00c897;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(0, 200, 151, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(0, 200, 151, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 200, 151, 0); }
+  background-color: #10b981;
 }
 
 .stratPnl {
-  font-weight: 700;
-  font-family: 'Inter', monospace;
-  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
 }
 
-.stratPnl.positive { color: #00FF87; }
-.stratPnl.negative { color: #FF3366; }
+.stratPnl.positive { color: #10b981; }
+.stratPnl.negative { color: #f43f5e; }
 
 .stratStats {
   display: grid;
@@ -275,10 +262,10 @@
 }
 
 .ltp {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #ffffff;
-  font-family: 'Inter', monospace;
+  font-family: 'Inter', sans-serif;
 }
 
 .change {
@@ -292,12 +279,12 @@
 }
 
 .change.positive {
-  color: #00FF87;
-  background: rgba(0, 255, 135, 0.1);
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
 }
 .change.negative {
-  color: #FF3366;
-  background: rgba(255, 51, 102, 0.1);
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.1);
 }
 
 /* Empty States */

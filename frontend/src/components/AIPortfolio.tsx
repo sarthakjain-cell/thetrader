@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { Trade } from '../types';
+import { Activity, Briefcase, History } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -79,33 +80,33 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, trades = []
     (strategies.reduce((sum, s) => sum + s.profit_factor, 0) / strategies.length).toFixed(2) : "0.00";
 
   let chartLabels = equityData.map(d => d.time.split(' ')[0]);
-  let chartValues = equityData.map(d => d.equity);
+  let chartValues = equityData.map(d => d.equity - 100000);
   
   if (chartValues.length === 0 && account?.equity) {
     chartLabels = ['Start', 'Live'];
-    chartValues = [100000, account.equity];
+    chartValues = [0, account.equity - 100000];
   } else if (account?.equity && chartValues.length > 0) {
     chartLabels.push('Live');
-    chartValues.push(account.equity);
+    chartValues.push(account.equity - 100000);
   }
 
   const chartData = {
     labels: chartLabels,
     datasets: [
       {
-        label: 'Account Equity (₹)',
+        label: 'Net PnL (₹)',
         data: chartValues,
         fill: true,
-        borderColor: isPositive ? 'rgba(0, 255, 135, 1)' : 'rgba(255, 51, 102, 1)',
+        borderColor: isPositive ? '#10b981' : '#f43f5e',
         backgroundColor: (context: any) => {
           const ctx = context.chart.ctx;
           const gradient = ctx.createLinearGradient(0, 0, 0, 200);
           if (isPositive) {
-            gradient.addColorStop(0, 'rgba(0, 255, 135, 0.4)');
-            gradient.addColorStop(1, 'rgba(0, 255, 135, 0.0)');
+            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
           } else {
-            gradient.addColorStop(0, 'rgba(255, 51, 102, 0.4)');
-            gradient.addColorStop(1, 'rgba(255, 51, 102, 0.0)');
+            gradient.addColorStop(0, 'rgba(244, 63, 94, 0.2)');
+            gradient.addColorStop(1, 'rgba(244, 63, 94, 0.0)');
           }
           return gradient;
         },
@@ -138,9 +139,10 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, trades = []
     scales: {
       x: { display: false },
       y: { 
-        display: false,
-        min: chartValues.length > 0 ? Math.min(...chartValues) * 0.99 : 0,
-        max: chartValues.length > 0 ? Math.max(...chartValues) * 1.01 : 100,
+        display: true,
+        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+        border: { display: false },
+        ticks: { color: 'rgba(255, 255, 255, 0.5)', font: { size: 10 } }
       },
     },
     interaction: {
@@ -196,9 +198,9 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, trades = []
       {activeTab === 'OVERVIEW' && (
         <>
           <div className={styles.sectionTitle} style={{ marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span>Account Equity Curve</span>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'normal', letterSpacing: '0px' }}>
-              Visualizes total portfolio balance over time, reflecting realized profits and live paper trading drawdowns.
+            <span>Net PnL Curve</span>
+            <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'normal' }}>
+              Visualizes actual profit and loss over time.
             </span>
           </div>
 
@@ -233,45 +235,7 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, trades = []
         </motion.div>
       </motion.div>
 
-      {/* Strategies Leaderboard */}
-      <div className={styles.sectionTitle}>Active AI Engines ({strategies.length})</div>
-      <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.strategyList}>
-        {strategies.length === 0 ? (
-          <motion.div variants={itemVariants} className={styles.emptyState}>
-            <div className={styles.boxIcon}>⚙️</div>
-            <div className={styles.emptyTitle}>Booting AI Engines...</div>
-            <div className={styles.emptyDesc}>The genetic algorithm is synthesizing strategies for today's market conditions.</div>
-          </motion.div>
-        ) : (
-          strategies.map((strat) => (
-            <motion.div variants={itemVariants} key={strat.strategy_id} className={styles.strategyCard}>
-              <div className={styles.stratHeader}>
-                <div className={styles.stratName}>
-                  <span className={styles.activeDot}></span>
-                  {strat.name}
-                </div>
-                <div className={`${styles.stratPnl} ${strat.net_pnl >= 0 ? styles.positive : styles.negative}`}>
-                  {strat.net_pnl >= 0 ? '+' : ''}₹{strat.net_pnl.toFixed(2)}
-                </div>
-              </div>
-              <div className={styles.stratStats}>
-                <div className={styles.statBox}>
-                  <div className={styles.statVal}>{strat.total_trades}</div>
-                  <div className={styles.statLabel}>Trades</div>
-                </div>
-                <div className={styles.statBox}>
-                  <div className={styles.statVal}>{(strat.win_rate * 100).toFixed(1)}%</div>
-                  <div className={styles.statLabel}>Win Rate</div>
-                </div>
-                <div className={styles.statBox}>
-                  <div className={styles.statVal}>{strat.profit_factor.toFixed(2)}</div>
-                  <div className={styles.statLabel}>Profit Factor</div>
-                </div>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </motion.div>
+
         </>
       )}
 
@@ -295,7 +259,7 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, trades = []
           <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.listContainer}>
             {filteredPositions.length === 0 ? (
               <motion.div variants={itemVariants} className={styles.emptyState}>
-                <div className={styles.boxIcon}>🔭</div>
+                <Briefcase size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
                 <div className={styles.emptyTitle}>No Active Trades</div>
                 <div className={styles.emptyDesc}>The portfolio is flat. The AI engines are actively scanning the live market for the next entry criteria.</div>
               </motion.div>
@@ -340,7 +304,7 @@ export const AIPortfolio: React.FC<AIPortfolioProps> = ({ positions, trades = []
         <motion.div variants={containerVariants} initial="hidden" animate="show" className={styles.listContainer}>
           {trades.length === 0 ? (
             <motion.div variants={itemVariants} className={styles.emptyState}>
-              <div className={styles.boxIcon}>📊</div>
+              <History size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
               <div className={styles.emptyTitle}>No Completed Trades</div>
               <div className={styles.emptyDesc}>The AI has not closed any positions today.</div>
             </motion.div>

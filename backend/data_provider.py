@@ -2,6 +2,7 @@ import sqlite3
 import yfinance as yf
 import pandas as pd
 from abc import ABC, abstractmethod
+from tenacity import retry, stop_after_attempt, wait_exponential
 from logger import log
 
 DB_PATH = "trading_system.db"
@@ -45,13 +46,19 @@ class TradingViewProvider(DataProvider):
             log.error(f"Failed to initialize TradingView: {e}")
             self.tv = None
             
+    @retry(stop=stop_after_attempt(4), wait=wait_exponential(multiplier=1, min=2, max=10))
+    def _fetch_tv_data(self, symbol):
+        from tvDatafeed import Interval
+        tv_sym = symbol.replace('.NS', '')
+        # Fetch ~100 bars to ensure we have the full current day
+        return self.tv.get_hist(symbol=tv_sym, exchange='NSE', interval=Interval.in_5_minute, n_bars=100)
+
     def get_today_data(self, symbols: list) -> dict:
         if not self.tv:
             log.error("TradingView not initialized.")
             return {}
             
         try:
-            from tvDatafeed import Interval
             data_dict = {}
             today = pd.Timestamp.now('Asia/Kolkata').date()
             
@@ -59,10 +66,8 @@ class TradingViewProvider(DataProvider):
             
             for sym in symbols:
                 try:
-                    # Remove .NS for TradingView symbol, and specify NSE exchange
-                    tv_sym = sym.replace('.NS', '')
-                    # Fetch ~100 bars to ensure we have the full current day
-                    df = self.tv.get_hist(symbol=tv_sym, exchange='NSE', interval=Interval.in_5_minute, n_bars=100)
+                    # Fetch data with tenacious retries
+                    df = self._fetch_tv_data(sym)
                     
                     if df is None or df.empty:
                         continue

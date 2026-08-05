@@ -34,7 +34,7 @@ def fetch_historical_data():
     if df.empty:
         return None
         
-    df['Datetime'] = pd.to_datetime(df['Datetime'])
+    df['Datetime'] = pd.to_datetime(df['Datetime'], format='mixed')
     
     # Fetch sentiment data and aggregate by day and symbol
     conn = get_db()
@@ -212,6 +212,9 @@ def main():
     if df_full.empty:
         print("Failed to generate features. Exiting.")
         sys.exit(1)
+        
+    if 'Symbol' not in df_full.columns:
+        df_full = df_full.reset_index()
         
     df_full = df_full.sort_values('Datetime').reset_index(drop=True)
     print(f"Total dataset size: {len(df_full)} rows. Features: {len(GLOBAL_FEATURE_COLS)}")

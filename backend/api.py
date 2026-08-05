@@ -10,13 +10,11 @@ import time
 import os
 import yfinance as yf
 from pydantic import BaseModel
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
-
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI(title="Algotrade Intraday Dashboard")
 
@@ -547,11 +545,13 @@ For all other general chat, market analysis, or questions, reply in normal conve
 DO NOT output JSON unless you want to physically move the user's screen.
 NEVER attempt to output a STOP_ENGINE or PLACE_TRADE action (they are blocked by the frontend anyway).
 """
+        # Create a new client instance for this specific user request to prevent concurrency bugs
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
         
-        model = genai.GenerativeModel(model_name="gemini-flash-latest")
-        
-        full_prompt = f"{system_prompt}\n\nUSER MESSAGE:\n{request.message}"
-        response = model.generate_content(full_prompt)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=f"{system_prompt}\n\nUSER MESSAGE:\n{request.message}",
+        )
         response_text = response.text.strip()
         
         # Check if the AI decided to use an Agentic JSON Action

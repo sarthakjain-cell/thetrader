@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from logger import log
 import subprocess
 import os
+import sys
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,7 +17,7 @@ async def run_script(script_name):
     log.info(f"[Daemon] Launching {script_name}...")
     try:
         process = await asyncio.create_subprocess_exec(
-            "python", script_path,
+            sys.executable, script_path,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
