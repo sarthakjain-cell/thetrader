@@ -53,6 +53,33 @@ class TradingViewProvider(DataProvider):
         # Fetch ~100 bars to ensure we have the full current day
         return self.tv.get_hist(symbol=tv_sym, exchange='NSE', interval=Interval.in_5_minute, n_bars=100)
 
+    @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=1, max=3))
+    def _fetch_yf_data(self, symbol):
+        df = yf.download(symbol, period="1d", interval="5m", progress=False)
+        if df.empty:
+            return None
+            
+        # Handle yfinance multi-index columns in recent versions
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.droplevel(1)
+            
+        df.reset_index(inplace=True)
+        # Rename just in case, though they are usually Title Case
+        df.rename(columns={
+            'Datetime': 'Datetime',
+            'Open': 'Open',
+            'High': 'High',
+            'Low': 'Low',
+            'Close': 'Close',
+            'Volume': 'Volume'
+        }, inplace=True)
+        
+        # Convert timezone
+        if df['Datetime'].dt.tz is not None:
+            df['Datetime'] = df['Datetime'].dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
+            
+        return df
+
     def get_today_data(self, symbols: list) -> dict:
         if not self.tv:
             log.error("TradingView not initialized.")
@@ -67,27 +94,31 @@ class TradingViewProvider(DataProvider):
             for sym in symbols:
                 try:
                     # Fetch data with tenacious retries
-                    df = self._fetch_tv_data(sym)
+                    df = None
+                    try:
+                        df = self._fetch_tv_data(sym)
+                    except Exception as e:
+                        log.warning(f"tvDatafeed failed for {sym}: {e}. Falling back to yfinance...")
+                        df = self._fetch_yf_data(sym)
                     
                     if df is None or df.empty:
                         continue
                         
-                    # tvDatafeed returns index as datetime, columns: symbol, open, high, low, close, volume
-                    df.reset_index(inplace=True)
-                    df.rename(columns={
-                        'datetime': 'Datetime',
-                        'open': 'Open',
-                        'high': 'High',
-                        'low': 'Low',
-                        'close': 'Close',
-                        'volume': 'Volume'
-                    }, inplace=True)
-                    
-                    # tvDatafeed returns naive UTC datetimes. We need to localize them to UTC and then convert to IST.
-                    if df['Datetime'].dt.tz is None:
-                        df['Datetime'] = df['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
-                    else:
-                        df['Datetime'] = df['Datetime'].dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
+                    # If it came from TV, we need to process it
+                    if 'datetime' in df.columns or df.columns.str.islower().any():
+                        df.rename(columns={
+                            'datetime': 'Datetime',
+                            'open': 'Open',
+                            'high': 'High',
+                            'low': 'Low',
+                            'close': 'Close',
+                            'volume': 'Volume'
+                        }, inplace=True)
+                        
+                        if df['Datetime'].dt.tz is None:
+                            df['Datetime'] = df['Datetime'].dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
+                        else:
+                            df['Datetime'] = df['Datetime'].dt.tz_convert('Asia/Kolkata').dt.tz_localize(None)
                         
                     # Filter for today only
                     df = df[df['Datetime'].dt.date == today].copy()

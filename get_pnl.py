@@ -9,9 +9,13 @@ try:
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(IP, username=USER, password=PASS, timeout=10)
     
-    print(f"--- Open Positions ---")
-    query = "SELECT * FROM paper_trades WHERE DATE(exit_time) = '2026-08-05';"
+    print(f"--- CLOSED TRADES (paper_trades) ---")
+    query = "SELECT id, symbol, side, qty, entry_price, exit_price, pnl, exit_time FROM paper_trades ORDER BY id DESC LIMIT 5;"
     stdin, stdout, stderr = ssh.exec_command(f"sqlite3 /root/backend/trading_system.db -header -column \\\"{query}\\\"")
+    print(stdout.read().decode().strip())
+    print(f"\\n--- OPEN POSITIONS (paper_positions) ---")
+    query2 = "SELECT id, symbol, qty, entry_price, entry_time FROM paper_positions ORDER BY id DESC LIMIT 5;"
+    stdin, stdout, stderr = ssh.exec_command(f"sqlite3 /root/backend/trading_system.db -header -column \\\"{query2}\\\"")
     print(stdout.read().decode().strip())
         
     print("\n--- Recent Logs (live_trader) ---")

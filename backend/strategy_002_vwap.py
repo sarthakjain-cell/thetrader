@@ -29,6 +29,19 @@ class Strategy002VWAP(BaseStrategy):
         dip_threshold = self.params['vwap_dip_threshold']
         
         if dist_from_vwap < dip_threshold: # dip below VWAP
+            # 1. Trend Filter: Don't catch falling knives in a downtrend
+            ema_21 = current_bar.get('EMA_21', price)
+            if current_vwap < ema_21:
+                signal_dict["reason"] = f"VETO: VWAP ({current_vwap:.2f}) is below EMA 21 ({ema_21:.2f}) - Downtrend"
+                return signal_dict
+                
+            # 2. Reversal Confirmation: Need a bullish candlestick pattern
+            is_hammer = current_bar.get('CDL_Hammer', 0) == 1
+            is_engulfing = current_bar.get('CDL_Engulfing_Bull', 0) == 1
+            if not (is_hammer or is_engulfing):
+                signal_dict["reason"] = f"VETO: Waiting for bullish reversal candlestick"
+                return signal_dict
+                
             signal_dict["signal"] = "BUY"
             signal_dict["reason"] = f"Price ({price:.2f}) is dipped {dist_from_vwap*100:.2f}% below VWAP ({current_vwap:.2f})."
             signal_dict["stop_loss"] = price * self.params['stop_loss_pct']

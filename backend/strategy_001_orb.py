@@ -7,8 +7,8 @@ class Strategy001ORB(BaseStrategy):
         
     def get_default_parameters(self) -> dict:
         return {
-            'stop_loss_atr_mult': 1.0,
-            'target_atr_mult': 2.0,
+            'stop_loss_atr_mult': 1.5,
+            'target_atr_mult': 3.0,
             'min_ml_prob': 0.55
         }
         
@@ -27,6 +27,19 @@ class Strategy001ORB(BaseStrategy):
         orb_high = current_bar['ORB_High']
         
         if price > orb_high:
+            # 1. Volume Confirmation
+            vol = current_bar.get('Volume', 0)
+            vol_sma = current_bar.get('Volume_SMA_20', 0)
+            if vol <= vol_sma:
+                signal_dict["reason"] = f"Breakout lacks volume confirmation (Vol: {vol} <= SMA: {vol_sma:.0f})"
+                return signal_dict
+                
+            # 2. Momentum Confirmation
+            rsi = current_bar.get('RSI_14', 50)
+            if rsi < 55:
+                signal_dict["reason"] = f"Breakout lacks momentum (RSI: {rsi:.1f} < 55)"
+                return signal_dict
+                
             atr = current_bar.get('ATR_14', price * 0.005)
                 
             stop_loss = price - (atr * self.params['stop_loss_atr_mult'])
