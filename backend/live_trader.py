@@ -84,8 +84,12 @@ class MetaAllocator:
         # Sort remaining intents by conviction descending
         sorted_intents = sorted(deduped.values(), key=lambda x: x["conviction"], reverse=True)
         
+        # Iteration Pacing: Take absolute best 1 trade per tick to spread out entries
+        max_trades_per_tick = 1
+        allowed_by_tick = min(available_slots, max_trades_per_tick)
+        
         # Take only the top N that we have slots for
-        selected_intents = sorted_intents[:available_slots]
+        selected_intents = sorted_intents[:allowed_by_tick]
         
         # Allocate capital (10% of total capital per trade = 100k)
         allocation_per_trade = self.total_capital * 0.10

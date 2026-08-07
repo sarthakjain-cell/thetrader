@@ -13,6 +13,8 @@ ssh.connect(IP, username=USER, password=PASS, timeout=10)
 with SCPClient(ssh.get_transport()) as scp:
     print("Uploading backend/data_provider.py...")
     scp.put('backend/data_provider.py', remote_path='/root/backend/data_provider.py')
+    print("Uploading backend/live_trader.py...")
+    scp.put('backend/live_trader.py', remote_path='/root/backend/live_trader.py')
 
 print("Restarting engine-a-technical via PM2...")
 stdin, stdout, stderr = ssh.exec_command("pm2 restart engine-a-technical", get_pty=True)
