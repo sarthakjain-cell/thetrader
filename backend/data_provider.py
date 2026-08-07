@@ -105,6 +105,9 @@ class TradingViewProvider(DataProvider):
                         continue
                         
                     # If it came from TV, we need to process it
+                    if df.index.name in ['datetime', 'Datetime', 'Date']:
+                        df.reset_index(inplace=True)
+                        
                     if 'datetime' in df.columns or df.columns.str.islower().any():
                         df.rename(columns={
                             'datetime': 'Datetime',
