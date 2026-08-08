@@ -13,6 +13,10 @@ def save_bars_to_db(df):
         conn = sqlite3.connect(DB_PATH, timeout=10)
         cursor = conn.cursor()
         
+        # Drop rows with NaN values to prevent DB corruption
+        df = df.dropna(subset=['Open', 'High', 'Low', 'Close', 'Volume'])
+        if df.empty: return
+        
         # Optimize memory and CPU using bulk transaction
         records = [
             (row['Symbol'], str(row['Datetime']), row['Open'], row['High'], row['Low'], row['Close'], row['Volume'])
